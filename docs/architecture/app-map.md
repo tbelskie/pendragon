@@ -1,0 +1,116 @@
+# Application Map
+
+Pendragon v0.1 should be small enough to build quickly and real enough to dogfood against Writing Quest.
+
+## Routes
+
+```text
+/app
+/app/setup
+/app/portfolio
+/app/products/:id
+/app/products/:id/warroom
+/app/products/:id/brief
+/app/products/:id/decisions
+/app/products/:id/docs
+/app/products/:id/forge
+/app/products/:id/retro
+```
+
+## Screens
+
+### Setup
+
+Creates the first product room.
+
+Inputs:
+
+- product name
+- stage
+- one-liner
+- user
+- current milestone
+- target date
+- repo URL
+- biggest worry
+
+Output:
+
+- product brief
+- current focus
+- readiness checklist
+- decision needed
+- top risk
+
+### Portfolio
+
+Shows the current product portfolio.
+
+For internal dogfooding, seed:
+
+- Writing Quest
+- Dot Primer
+- MockBizOps
+- Vinegar
+
+### Product Warroom
+
+The main screen.
+
+Core panels:
+
+- this week's focus
+- next actions
+- readiness by Build, Docs, Launch, Trust, Revenue
+- decision needed
+- top risk
+- current milestone
+
+The warroom should answer:
+
+> What matters this week?
+
+### Product Brief
+
+Stores the product's one-liner, user, problem, promise, stage, milestone, and strategic constraints.
+
+### Decisions
+
+Captures durable choices and prevents re-litigating the same questions without new evidence.
+
+### Docs
+
+Tracks the product's public knowledge surface:
+
+- landing page
+- getting started
+- FAQ
+- privacy/trust
+- changelog
+- support
+- API reference, if needed
+
+### Forge
+
+Placeholder in v0.1.
+
+Future job:
+
+> Build a launch site from the product room.
+
+### Retro
+
+Stores launch and weekly retrospectives.
+
+## v0.1 Navigation
+
+Keep the shell minimal:
+
+- Portfolio
+- Warroom
+- Decisions
+- Docs
+- Forge
+
+Do not add a broad settings area until persistence/import/export requires it.
+
