@@ -11,7 +11,7 @@ Retro writing desktop app for indie writers and hobbyists.
 
 Repo: `tbelskie/writing-quest`
 
-Current read: active paid beta candidate with Tauri, React, Rust, SQLite, project creation, project library, Tiptap editor, quest sessions, local persistence, autosave/recovery states, TXT/Markdown export, companion choice, and staged companion evolution. Needs launch-readiness polish before it can be sold confidently.
+Current read: active paid beta candidate with Tauri, React, Rust, SQLite, project creation, project library, Tiptap editor, quest sessions, local persistence, autosave/recovery states, TXT/Markdown export, companion choice, staged companion evolution, and honest export positioning. Needs real DOCX, launch-quality art, and packaging polish before it can be sold confidently as v1.
 
 ## Current Bet
 
@@ -30,7 +30,8 @@ Turn Writing Quest into the portfolio's first polished paid launch candidate.
 
 - final art quality is not yet good enough to carry the emotional promise
 - desktop save/export trust still needs beta soak with real writing sessions
-- DOCX/EPUB should not be promised until production-valid
+- real DOCX is required before paid v1 launch
+- EPUB should not be promised until production-valid
 - paid beta sales/download/license behavior is undefined and could become a distraction if overbuilt
 - Windows installer verification is still outstanding
 - local esbuild process issue should be cleared before the next packaging pass
@@ -38,7 +39,7 @@ Turn Writing Quest into the portfolio's first polished paid launch candidate.
 
 ## Next Actions
 
-1. Make export positioning honest: TXT/Markdown first, DOCX/EPUB later.
+1. Build real DOCX export for paid v1.
 2. Create production art direction and asset requirements.
 3. Decide paid beta distribution and licensing scope.
 4. Draft landing page, privacy/local-first copy, and launch posts.

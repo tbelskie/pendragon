@@ -54,3 +54,13 @@ Context: the current launch bet is a simple paid desktop download. In-app licens
 Why: writers should meet a calm writing ritual, not unfinished commerce plumbing. Sales/download access can be handled outside the app until the beta proves demand.
 
 Revisit when: the direct-sales channel requires in-app activation or piracy/support risk becomes more expensive than the added complexity.
+
+## 2026-05-28: Writing Quest Requires Real DOCX For Paid V1
+
+Decision: real DOCX export is required for paid v1. TXT and Markdown remain supported baseline exports, and EPUB is a validation-gated stretch or post-launch feature.
+
+Context: serious writers expect to move manuscript text into Word-first workflows for editing, sharing, and submission. The old DOCX/EPUB code was placeholder output wired to legacy drafts, so Writing Quest PR #27 removed that fake surface and opened `tbelskie/writing-quest` issues #25 and #26.
+
+Why: export is a trust moment. Fake manuscript formats would make the app feel like a toy precisely when a writer needs confidence.
+
+Revisit when: real DOCX is implemented and beta writers can test actual manuscript handoff.

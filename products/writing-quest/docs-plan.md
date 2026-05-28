@@ -26,5 +26,5 @@
 
 1. Landing page copy for paid beta.
 2. Local-first privacy note: no cloud, no AI, no telemetry.
-3. Export guide that leads with TXT/Markdown and names DOCX/EPUB as later.
+3. Export guide that leads with TXT/Markdown now, DOCX once issue #25 ships, and EPUB only if validation passes.
 4. Getting started: create a project, choose a companion, start first quest, export safely.
