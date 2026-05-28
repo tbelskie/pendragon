@@ -43,6 +43,7 @@ Recently shipped in `tbelskie/writing-quest`:
 - Production art direction: Writing Quest PR #29 turned the final companion/icon/font quality bar into a concrete art brief and updated issue #12.
 - DOCX QA checklist: Writing Quest PR #30 defined the manual compatibility matrix for Word, Pages, Google Docs import, and LibreOffice.
 - Browser preview polish: Writing Quest PR #31 removed preview-console Tauri IPC noise and duplicate underline extension warnings.
+- Inline save feedback: Writing Quest PR #32 removed blocking manual-save and settings-save alerts.
 
 Open product truth: the generated art is not launch-quality. The sprite/icon pipeline and art direction now exist, but final companion/logo/font assets still need production execution.
 
@@ -87,6 +88,7 @@ Defer:
 - [x] Production art direction brief exists.
 - [x] DOCX manual QA checklist exists.
 - [x] Browser preview loads and editor opens without known warning/error noise.
+- [x] Manual save and settings save use non-blocking inline feedback.
 - [ ] Desktop beta soak confirms save/export trust with real writing sessions.
 - [ ] Real DOCX export is manually QA'd in Word-equivalent apps.
 - [ ] Final companion/logo art is production-grade.
