@@ -23,6 +23,7 @@ Make writing feel like a small quest: focused, tactile, private, and rewarding.
 - NaNoWriMo-style November writing season creates launch timing, though the official brand should be avoided.
 - Early testing already caught a blocking save-warning issue in browser preview, which has been fixed.
 - Founder feedback clarified the art bar: lo-fi is acceptable, amateurish is not.
+- Production art direction now exists in `tbelskie/writing-quest` after PR #29; execution is still open.
 
 ## Current Bet
 

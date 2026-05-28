@@ -40,8 +40,9 @@ Recently shipped in `tbelskie/writing-quest`:
 - Core writing-loop copy polish: softer onboarding, quest start, pause/end states, save/export language, settings copy, and removal of unfinished trial/license/encryption/extras surfaces from the visible app.
 - Export truth pass: removed fake legacy DOCX/EPUB commands, clarified TXT/Markdown as the current baseline, and opened real DOCX/EPUB tracking issues.
 - Initial real DOCX export: current-project `.docx` package generation, Word Document export menu item, and automated package tests.
+- Production art direction: Writing Quest PR #29 turned the final companion/icon/font quality bar into a concrete art brief and updated issue #12.
 
-Open product truth: the generated art is not launch-quality. The sprite/icon pipeline exists, but final companion/logo art still needs real art direction and stronger assets.
+Open product truth: the generated art is not launch-quality. The sprite/icon pipeline and art direction now exist, but final companion/logo/font assets still need production execution.
 
 ## Smallest Lovable Paid Beta
 
@@ -81,9 +82,11 @@ Defer:
 - [x] Unfinished in-app trial/license/encryption surfaces are hidden from the paid beta path.
 - [x] macOS DMG build verifies on Apple Silicon.
 - [x] Export copy clearly avoids overpromising DOCX/EPUB.
+- [x] Production art direction brief exists.
 - [ ] Desktop beta soak confirms save/export trust with real writing sessions.
 - [ ] Real DOCX export is manually QA'd in Word-equivalent apps.
 - [ ] Final companion/logo art is production-grade.
+- [ ] Pixel font decision is resolved.
 - [ ] Windows installer is built and verified.
 - [ ] EPUB launch/post-launch decision is made.
 - [ ] Paid beta sales/download/license behavior is defined outside the app.
@@ -115,7 +118,7 @@ Draft the one-page paid beta landing page, but keep DOCX copy cautious until iss
 ## Next Implementation Slices
 
 1. DOCX validation pass: desktop export, Word/Pages/Google Docs/LibreOffice open/import QA, and fixes from that pass.
-2. Art direction brief and asset requirements for production companion/logo work.
+2. Production art execution: final companion sheets, app icon, boot emblem, and font decision from the art brief.
 3. License/beta distribution decision: simple paid download first, avoid building a heavy licensing system before signal.
 4. Landing page draft and demo capture plan.
 5. Clear local esbuild process issue before the next packaging/build slice.

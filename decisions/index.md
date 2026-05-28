@@ -74,3 +74,13 @@ Context: Writing Quest PR #28 replaced the old placeholder risk with a real Offi
 Why: this gives serious writers the manuscript handoff path they expect while preserving the trust bar around manual compatibility validation.
 
 Revisit when: issue #25 completes manual validation in Microsoft Word, Apple Pages, Google Docs import, and LibreOffice.
+
+## 2026-05-28: Writing Quest Art Must Be Lo-Fi But Production-Grade
+
+Decision: Writing Quest will not treat generated placeholder art as launch art. Final companion sheets, app icon, boot emblem, and font choice must meet the production art direction brief added in Writing Quest PR #29.
+
+Context: the generated assets are useful scaffolding, but founder feedback made the quality gap explicit: the art needs polished 90s handheld craft, not amateur filler.
+
+Why: companion attachment is one of the product's main emotional hooks. If the sprites feel cheap, the whole writing ritual feels cheaper.
+
+Revisit when: final art assets are installed and screenshots across boot, project creation, editor sidebar, quest HUD, and evolution overlay pass the art bar.
