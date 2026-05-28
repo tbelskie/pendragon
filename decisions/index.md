@@ -64,3 +64,13 @@ Context: serious writers expect to move manuscript text into Word-first workflow
 Why: export is a trust moment. Fake manuscript formats would make the app feel like a toy precisely when a writer needs confidence.
 
 Revisit when: real DOCX is implemented and beta writers can test actual manuscript handoff.
+
+## 2026-05-28: Writing Quest Ships Initial Real DOCX Export
+
+Decision: Writing Quest now exposes DOCX export in the app, backed by current-project `.docx` package generation and automated package tests.
+
+Context: Writing Quest PR #28 replaced the old placeholder risk with a real Office document package path and kept EPUB deferred.
+
+Why: this gives serious writers the manuscript handoff path they expect while preserving the trust bar around manual compatibility validation.
+
+Revisit when: issue #25 completes manual validation in Microsoft Word, Apple Pages, Google Docs import, and LibreOffice.
