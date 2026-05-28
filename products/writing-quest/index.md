@@ -39,7 +39,7 @@ Turn Writing Quest into the portfolio's first polished paid launch candidate.
 
 ## Next Actions
 
-1. Validate DOCX export in Word-equivalent apps and harden compatibility issues.
+1. Run the DOCX QA checklist in Word-equivalent apps and harden compatibility issues.
 2. Execute production art from the new art direction brief.
 3. Decide paid beta distribution and licensing scope.
 4. Draft landing page, privacy/local-first copy, and launch posts.

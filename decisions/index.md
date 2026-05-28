@@ -84,3 +84,13 @@ Context: the generated assets are useful scaffolding, but founder feedback made 
 Why: companion attachment is one of the product's main emotional hooks. If the sprites feel cheap, the whole writing ritual feels cheaper.
 
 Revisit when: final art assets are installed and screenshots across boot, project creation, editor sidebar, quest HUD, and evolution overlay pass the art bar.
+
+## 2026-05-28: Writing Quest DOCX Launch Readiness Requires Manual Compatibility QA
+
+Decision: DOCX will not be described as fully launch-ready until the checklist added in Writing Quest PR #30 passes across Microsoft Word, Apple Pages, Google Docs import, and LibreOffice.
+
+Context: automated tests prove the app generates a real Office document package, but manuscript handoff trust depends on actual writing-app behavior.
+
+Why: export is where writers learn whether the product respects their work. Passing the compatibility matrix matters more than checking a feature box.
+
+Revisit when: issue #25 is closed after checklist results are recorded.
