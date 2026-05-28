@@ -20,3 +20,6 @@ Create a small, private moment of friction before checkout.
 
 The product works only if the friction feels supportive.
 
+## Audit Notes
+
+The strongest part of Vinegar is the product psychology: a private pause at the moment of temptation. The dangerous part is overreaching technically or tonally. The extension should feel like user-controlled friction, not a page takeover users regret installing.

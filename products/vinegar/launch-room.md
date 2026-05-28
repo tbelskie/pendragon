@@ -11,9 +11,10 @@ Determine whether the problem and positioning resonate before overbuilding.
 ## Readiness Checklist
 
 - [ ] Repo audit complete.
+- [ ] Core breathing intervention bug fixed.
 - [ ] Core intervention defined.
 - [ ] Privacy model defined.
+- [ ] Permissions story written.
 - [ ] Positioning tested.
 - [ ] Chrome extension path assessed.
 - [ ] Monetization hypothesis drafted.
-

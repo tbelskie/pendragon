@@ -9,7 +9,7 @@ Chrome extension for focused deep work sessions.
 
 ## Status
 
-Repo: TBD after audit.
+Repo: `tbelskie/dot`
 
 Known product data from Chrome Web Store dashboard:
 
@@ -25,9 +25,19 @@ Known product data from Chrome Web Store dashboard:
 
 Dot Primer has weak acquisition volume but real passive usage. The most interesting signal is that people still use it despite no active development or marketing.
 
+The repo contains a packaged Chrome extension at `dot-extension1.0.0/`, older submission folders, a public docs/marketing site under `docs/`, and a separate Vite/React mobile-style prototype in `src/`.
+
 ## Current Bet
 
 Can listing optimization, basic analytics, and a small product polish pass turn passive usage into clearer retention and monetization signal?
+
+## Known Risks
+
+- Repo contains multiple historical extension bundles, which makes the source of truth unclear.
+- `package.json` describes a `dot-ios-app`, while the shipped product is a Chrome extension.
+- Extension requests broad host access and injects a floating sidebar on all pages.
+- Current focus copy can feel harsh or performance-bro-y in places.
+- Build command currently cannot run without installing dependencies.
 
 ## Launch Lessons
 
@@ -45,4 +55,3 @@ Can listing optimization, basic analytics, and a small product polish pass turn 
 - [Pricing](pricing.md)
 - [Experiments](experiments.md)
 - [Retrospective](retro.md)
-
