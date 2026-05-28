@@ -7,16 +7,24 @@
 - FAQ
 - privacy/local-first explanation
 - export guide
-- license/trial help
+- paid beta/license help
 - troubleshooting
 - changelog
 
 ## UX Writing Focus
 
 - onboarding
+- muse selection
 - empty states
 - quest start/end language
 - autosave confidence
 - export confirmation
-- license state
+- evolution celebration
+- beta/license state
 
+## Immediate Drafts
+
+1. Landing page copy for paid beta.
+2. Local-first privacy note: no cloud, no AI, no telemetry.
+3. Export guide that leads with TXT/Markdown and names DOCX/EPUB as later.
+4. Getting started: create a project, choose a companion, start first quest, export safely.

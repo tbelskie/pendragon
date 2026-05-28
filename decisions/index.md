@@ -25,3 +25,22 @@ Why: the portfolio turns scattered ideas into a testbed.
 
 Revisit when: one product shows enough signal to demand sustained focus.
 
+## 2026-05-28: Writing Quest Uses Pendragon As Launch Warroom
+
+Decision: use `products/writing-quest` in Pendragon as the canonical product and launch memory for Writing Quest.
+
+Context: Writing Quest implementation work is moving quickly in `tbelskie/writing-quest`, but launch scope, risks, pricing, docs, and GTM decisions need to survive across PRs.
+
+Why: Pendragon should hold the strategic state above repo-native implementation so the product does not drift while code changes land.
+
+Revisit when: Pendragon becomes a productized app or the workflow creates more maintenance than clarity.
+
+## 2026-05-28: Writing Quest Paid Beta Scope
+
+Decision: smallest lovable paid beta is the offline writing loop with local projects, companion choice, quest sessions, autosave/recovery trust, three-stage companion evolution, TXT/Markdown export, and honest local-first positioning.
+
+Context: the product can be delightful without production DOCX/EPUB export, cloud sync, AI, telemetry, deep RPG systems, or Steam launch work.
+
+Why: paid beta needs to prove that writers want the ritual. Extra systems before proof would increase launch risk and dilute the emotional center.
+
+Revisit when: beta testers consistently ask for the same missing capability or export limitations block paid use.

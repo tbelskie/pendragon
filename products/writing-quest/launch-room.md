@@ -1,10 +1,12 @@
 # Writing Quest Launch Room
 
+Last updated: 2026-05-28
+
 ## Launch
 
 Working launch: paid beta.
 
-Target window: fall writing season.
+Target window: October 2026, ahead of the fall writing season.
 
 ## Goal
 
@@ -12,16 +14,70 @@ First paid licenses and proof that writers respond to the retro writing quest po
 
 ## Offer
 
-One-time early access license.
+One-time early access license. No subscription, cloud account, AI layer, or telemetry.
 
-Pricing hypothesis: TBD.
+Pricing hypothesis: $19 early access, $29 launch price. Revisit only after beta feedback or a clear channel constraint.
+
+## Product Thesis
+
+Writing Quest should feel like booting up an old handheld game to write your novel: cozy, private, low-pressure, and quietly motivating.
+
+## Current State
+
+Writing Quest is now past skeleton stage. The app has a working desktop core loop: create project, choose companion, write in the editor, enter quest sessions, save locally, track progress, and evolve companions.
+
+Recently shipped in `tbelskie/writing-quest`:
+
+- Writing Quest brand cleanup across app/repo surfaces.
+- TXT and Markdown export path.
+- Quest completion/session persistence.
+- Autosave, recovery, and close-save trust states.
+- Project Library picker with safer project switching.
+- Browser-preview persistence fallback for local QA.
+- Three-stage writer-elemental companion model: base, first evolution, final evolution.
+- Staged sprite sheet support for companion forms.
+- Verified macOS DMG build on Apple Silicon.
+
+Open product truth: the generated art is not launch-quality. The sprite/icon pipeline exists, but final companion/logo art still needs real art direction and stronger assets.
+
+## Smallest Lovable Paid Beta
+
+Ship a charming, stable, offline writing ritual.
+
+Include:
+
+- Local project creation and project library.
+- Companion choice with 1 base form and 2 evolutions.
+- Focused editor with trustworthy autosave/recovery.
+- Quest sessions with clear start, pause, completion, and progress feedback.
+- Progress/evolution that feels encouraging, not judgmental.
+- TXT and Markdown export with honest copy.
+- Basic settings.
+- Local-first privacy messaging.
+- macOS build first, with Windows verification before broader sales claims.
+
+Defer:
+
+- Production DOCX/EPUB export.
+- Cloud sync, accounts, collaboration, or web app behavior.
+- AI writing features.
+- Telemetry or productivity dashboards.
+- Deep RPG systems, currencies, shops, streak pressure, or chore loops.
+- Steam launch work until direct/itch/Gumroad beta signal exists.
 
 ## Readiness Checklist
 
-- [ ] Rename cleanup complete.
-- [ ] Project creation works.
-- [ ] Editor autosave is trustworthy.
-- [ ] Export path is honest and reliable.
+- [x] Rename cleanup complete for the app/repo beta path.
+- [x] Project creation works.
+- [x] Project Library and safer project switching exist.
+- [x] Editor autosave/recovery states are implemented.
+- [x] TXT/Markdown export path exists.
+- [x] Companion evolution model is scoped to three stages.
+- [x] macOS DMG build verifies on Apple Silicon.
+- [ ] Desktop beta soak confirms save/export trust with real writing sessions.
+- [ ] Final companion/logo art is production-grade.
+- [ ] Windows installer is built and verified.
+- [ ] Export copy clearly avoids overpromising DOCX/EPUB.
 - [ ] License/trial behavior is defined.
 - [ ] Landing page exists.
 - [ ] Privacy/local-first messaging exists.
@@ -29,3 +85,27 @@ Pricing hypothesis: TBD.
 - [ ] Support/contact path exists.
 - [ ] Launch posts drafted.
 
+## Active Risks
+
+- Art quality is the biggest delight risk. The direction should be lo-fi but high-quality, closer to polished 90s handheld RPG craft than generated placeholder art.
+- Real desktop beta testing has not yet produced enough evidence around long-session autosave, switching projects, quitting, and reopening.
+- License/trial behavior is still undefined; it could distract from beta distribution if overbuilt too early.
+- DOCX/EPUB should not be sold as production-ready until proven with real manuscripts and validation.
+- Windows packaging is still a launch-readiness gap.
+- Distribution order needs discipline: direct paid beta first, then itch/Gumroad, then consider Steam after signal.
+
+## Next Build Priority
+
+Polish the core writing loop copy and emotion: onboarding, muse selection, quest start, pause, completion, autosave confidence, export confirmation, and evolution moments.
+
+## Next Docs/GTM Priority
+
+Draft the one-page paid beta landing page: promise, screenshots/GIF target, local-first trust, one-time price, support path, and honest beta caveats.
+
+## Next Implementation Slices
+
+1. Tone and UX copy pass for the full writing loop.
+2. Export truth pass: make TXT/Markdown primary and demote or hide rough DOCX/EPUB claims.
+3. Art direction brief and asset requirements for production companion/logo work.
+4. License/beta distribution decision: simple paid download first, avoid building a heavy licensing system before signal.
+5. Landing page draft and demo capture plan.
