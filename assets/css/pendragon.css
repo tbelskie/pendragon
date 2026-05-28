@@ -1,0 +1,67 @@
+.site-header {
+  background: #050608;
+  border-top: 0;
+  border-bottom: 1px solid #20242c;
+}
+
+.pendragon-header {
+  align-items: center;
+  display: flex;
+  min-height: 72px;
+}
+
+.pendragon-brand {
+  align-items: center;
+  display: inline-flex;
+  line-height: 0;
+  min-height: 72px;
+}
+
+.pendragon-brand img {
+  display: block;
+  height: 42px;
+  max-width: min(360px, 58vw);
+  object-fit: contain;
+}
+
+.site-nav {
+  margin-left: auto;
+}
+
+.site-nav .page-link {
+  color: #d7d9df;
+}
+
+.site-nav .page-link:hover {
+  color: #ff5c1e;
+  text-decoration: none;
+}
+
+@media screen and (max-width: 600px) {
+  .pendragon-header {
+    min-height: 64px;
+  }
+
+  .pendragon-brand {
+    min-height: 64px;
+  }
+
+  .pendragon-brand img {
+    height: 34px;
+    max-width: 230px;
+  }
+
+  .site-nav {
+    background-color: #08090d;
+    border-color: #2a2f38;
+  }
+
+  .site-nav .menu-icon > svg {
+    fill: #d7d9df;
+  }
+
+  .site-nav .page-link {
+    color: #f2f3f5;
+  }
+}
+
