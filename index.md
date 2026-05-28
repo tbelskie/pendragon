@@ -27,8 +27,8 @@ The long-term ambition is bigger: a web app plus Codex plugin that gives micro-S
 - [Decision Ledger](decisions/)
 - [Playbooks](playbooks/)
 - [Templates](templates/)
+- [Brand Assets](assets/brand/)
 
 ## Current Principle
 
 Only one product gets active build focus at a time. The others get maintenance, measurement, or tightly scoped validation.
-
