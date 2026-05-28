@@ -44,6 +44,7 @@ Recently shipped in `tbelskie/writing-quest`:
 - DOCX QA checklist: Writing Quest PR #30 defined the manual compatibility matrix for Word, Pages, Google Docs import, and LibreOffice.
 - Browser preview polish: Writing Quest PR #31 removed preview-console Tauri IPC noise and duplicate underline extension warnings.
 - Inline save feedback: Writing Quest PR #32 removed blocking manual-save and settings-save alerts.
+- Background save hardening: Writing Quest PR #33 saves the active project when the app is hidden, blurred, or receives `pagehide`.
 
 Open product truth: the generated art is not launch-quality. The sprite/icon pipeline and art direction now exist, but final companion/logo/font assets still need production execution.
 
@@ -89,6 +90,7 @@ Defer:
 - [x] DOCX manual QA checklist exists.
 - [x] Browser preview loads and editor opens without known warning/error noise.
 - [x] Manual save and settings save use non-blocking inline feedback.
+- [x] Active project saves on app hide, window blur, and pagehide.
 - [ ] Desktop beta soak confirms save/export trust with real writing sessions.
 - [ ] Real DOCX export is manually QA'd in Word-equivalent apps.
 - [ ] Final companion/logo art is production-grade.
@@ -105,7 +107,7 @@ Defer:
 ## Active Risks
 
 - Art quality is the biggest delight risk. The direction should be lo-fi but high-quality, closer to polished 90s handheld RPG craft than generated placeholder art.
-- Real desktop beta testing has not yet produced enough evidence around long-session autosave, switching projects, quitting, and reopening.
+- Real desktop beta testing has not yet produced enough evidence around long-session autosave, switching projects, quitting, and reopening. PR #33 reduces the risk, but does not replace real writing-session soak.
 - License/trial behavior is still undefined; it could distract from beta distribution if overbuilt too early.
 - Initial real DOCX exists, but it still needs manual validation in Microsoft Word, Apple Pages, Google Docs import, and LibreOffice before launch claims harden.
 - EPUB should not be sold as production-ready until proven with real manuscripts and validation.
