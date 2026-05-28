@@ -31,17 +31,18 @@ Turn Writing Quest into the portfolio's first polished paid launch candidate.
 - final art quality is not yet good enough to carry the emotional promise
 - desktop save/export trust still needs beta soak with real writing sessions
 - DOCX/EPUB should not be promised until production-valid
-- license/trial behavior is undefined and could become a distraction
+- paid beta sales/download/license behavior is undefined and could become a distraction if overbuilt
 - Windows installer verification is still outstanding
+- local esbuild process issue should be cleared before the next packaging pass
 - launch window requires discipline
 
 ## Next Actions
 
-1. Polish the core writing loop UX copy.
-2. Make export positioning honest: TXT/Markdown first, DOCX/EPUB later.
-3. Create production art direction and asset requirements.
-4. Decide paid beta distribution and licensing scope.
-5. Draft landing page, privacy/local-first copy, and launch posts.
+1. Make export positioning honest: TXT/Markdown first, DOCX/EPUB later.
+2. Create production art direction and asset requirements.
+3. Decide paid beta distribution and licensing scope.
+4. Draft landing page, privacy/local-first copy, and launch posts.
+5. Clear the local esbuild process issue before packaging work.
 
 ## Files
 

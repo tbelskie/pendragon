@@ -37,6 +37,7 @@ Recently shipped in `tbelskie/writing-quest`:
 - Three-stage writer-elemental companion model: base, first evolution, final evolution.
 - Staged sprite sheet support for companion forms.
 - Verified macOS DMG build on Apple Silicon.
+- Core writing-loop copy polish: softer onboarding, quest start, pause/end states, save/export language, settings copy, and removal of unfinished trial/license/encryption/extras surfaces from the visible app.
 
 Open product truth: the generated art is not launch-quality. The sprite/icon pipeline exists, but final companion/logo art still needs real art direction and stronger assets.
 
@@ -73,12 +74,14 @@ Defer:
 - [x] Editor autosave/recovery states are implemented.
 - [x] TXT/Markdown export path exists.
 - [x] Companion evolution model is scoped to three stages.
+- [x] Core loop tone avoids shame, punishment, and productivity-theater language.
+- [x] Unfinished in-app trial/license/encryption surfaces are hidden from the paid beta path.
 - [x] macOS DMG build verifies on Apple Silicon.
 - [ ] Desktop beta soak confirms save/export trust with real writing sessions.
 - [ ] Final companion/logo art is production-grade.
 - [ ] Windows installer is built and verified.
 - [ ] Export copy clearly avoids overpromising DOCX/EPUB.
-- [ ] License/trial behavior is defined.
+- [ ] Paid beta sales/download/license behavior is defined outside the app.
 - [ ] Landing page exists.
 - [ ] Privacy/local-first messaging exists.
 - [ ] Demo GIF/video exists.
@@ -93,10 +96,11 @@ Defer:
 - DOCX/EPUB should not be sold as production-ready until proven with real manuscripts and validation.
 - Windows packaging is still a launch-readiness gap.
 - Distribution order needs discipline: direct paid beta first, then itch/Gumroad, then consider Steam after signal.
+- Local build tooling has a machine-specific esbuild process issue; validation currently works by pointing `ESBUILD_BINARY_PATH` at a clean copied binary. This should be cleared with a local restart before packaging work.
 
 ## Next Build Priority
 
-Polish the core writing loop copy and emotion: onboarding, muse selection, quest start, pause, completion, autosave confidence, export confirmation, and evolution moments.
+Export truth pass: make TXT/Markdown feel intentionally supported and ensure rough DOCX/EPUB paths are not promised anywhere in the paid beta experience.
 
 ## Next Docs/GTM Priority
 
@@ -104,8 +108,8 @@ Draft the one-page paid beta landing page: promise, screenshots/GIF target, loca
 
 ## Next Implementation Slices
 
-1. Tone and UX copy pass for the full writing loop.
-2. Export truth pass: make TXT/Markdown primary and demote or hide rough DOCX/EPUB claims.
-3. Art direction brief and asset requirements for production companion/logo work.
-4. License/beta distribution decision: simple paid download first, avoid building a heavy licensing system before signal.
-5. Landing page draft and demo capture plan.
+1. Export truth pass: make TXT/Markdown primary and demote or hide rough DOCX/EPUB claims.
+2. Art direction brief and asset requirements for production companion/logo work.
+3. License/beta distribution decision: simple paid download first, avoid building a heavy licensing system before signal.
+4. Landing page draft and demo capture plan.
+5. Clear local esbuild process issue before the next packaging/build slice.

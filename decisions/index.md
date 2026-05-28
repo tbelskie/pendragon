@@ -44,3 +44,13 @@ Context: the product can be delightful without production DOCX/EPUB export, clou
 Why: paid beta needs to prove that writers want the ritual. Extra systems before proof would increase launch risk and dilute the emotional center.
 
 Revisit when: beta testers consistently ask for the same missing capability or export limitations block paid use.
+
+## 2026-05-28: Writing Quest Defers In-App Licensing
+
+Decision: remove visible trial limits, license-key entry, and unfinished encryption promises from the paid beta app path.
+
+Context: the current launch bet is a simple paid desktop download. In-app license verification and security toggles were placeholder-level and made the product feel less trustworthy.
+
+Why: writers should meet a calm writing ritual, not unfinished commerce plumbing. Sales/download access can be handled outside the app until the beta proves demand.
+
+Revisit when: the direct-sales channel requires in-app activation or piracy/support risk becomes more expensive than the added complexity.
