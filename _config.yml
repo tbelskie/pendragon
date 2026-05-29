@@ -5,7 +5,3 @@ markdown: kramdown
 
 header_pages:
   - architecture.md
-  - vision.md
-  - portfolio.md
-  - operating-model.md
-  - roadmap.md
