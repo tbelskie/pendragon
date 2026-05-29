@@ -1,5 +1,5 @@
 ---
-layout: home
+layout: page
 title: Pendragon
 ---
 
@@ -7,28 +7,29 @@ title: Pendragon
 
 **Develop, document, launch.**
 
-Pendragon is the internal GTM warroom for a portfolio of small software products. It starts as a fancy notebook: product rooms, launch rooms, docs plans, decision logs, GTM experiments, and retrospectives.
+Pendragon is becoming a stage-aware GTM warroom for micro-SaaS founders.
 
-The long-term ambition is bigger: a web app plus Codex plugin that gives micro-SaaS founders the product, docs, and launch discipline they usually have to improvise alone.
+The original Markdown notebook has been preserved under [archive/notebook](archive/notebook/). The primary product direction now lives in the architecture docs and the first app scaffold.
 
-## Product Rooms
+## Start Here
 
-- [Writing Quest](products/writing-quest/)
-- [Dot Primer](products/dot-primer/)
-- [Vinegar](products/vinegar/)
-- [MockBizOps](products/mockbizops/)
-
-## Warroom
-
-- [Vision](vision.md)
-- [Portfolio Map](portfolio.md)
-- [Operating Model](operating-model.md)
-- [Roadmap](roadmap.md)
-- [Decision Ledger](decisions/)
-- [Playbooks](playbooks/)
-- [Templates](templates/)
+- [Open The App Scaffold](app/)
+- [Architecture](architecture.md)
 - [Brand Assets](assets/brand/)
+- [Archived Notebook](archive/notebook/)
 
-## Current Principle
+## Current Build Focus
 
-Only one product gets active build focus at a time. The others get maintenance, measurement, or tightly scoped validation.
+Pendragon v0.1 is an internal-but-real web app used to dogfood the launch of Writing Quest.
+
+The app starts small:
+
+- product rooms
+- stage-aware warroom
+- Writing Quest seeded as the first dogfood product
+- local-first data model
+- future Forge placeholder
+
+The operating rule remains simple:
+
+> Conversation is for thinking. Durable work belongs in this repo.

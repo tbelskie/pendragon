@@ -1,15 +1,15 @@
 # Pendragon
 
-Pendragon is the internal GTM warroom for a small indie software portfolio.
+Pendragon is the GTM warroom for micro-SaaS founders.
 
-For now, it is deliberately simple: a Markdown-first operating notebook for developing, documenting, launching, and learning from small products. The long-term vision is a sleek web app and Codex plugin that help micro-SaaS founders turn half-built projects into launched, documented, sellable software.
+It is moving from a Markdown notebook into a stage-aware web app used to dogfood the launch of Writing Quest and manage a small indie software portfolio.
 
-## Portfolio
+## Current Structure
 
-- [Writing Quest](products/writing-quest/index.md): retro writing desktop app for indie writers and hobbyists.
-- [Dot Primer](products/dot-primer/index.md): Chrome extension for focused deep work sessions.
-- [Vinegar](products/vinegar/index.md): impulse-shopping blocker for people trying to spend more intentionally.
-- [MockBizOps](products/mockbizops/index.md): realistic fake business APIs for prototypes, demos, tutorials, and docs.
+- `app/`: first web app scaffold.
+- `docs/`: architecture, product scope, and decisions.
+- `assets/brand/`: locked Lava Glass brand assets.
+- `archive/notebook/`: preserved Markdown notebook and original product rooms.
 
 ## Core Idea
 
@@ -19,10 +19,8 @@ Each product gets a launch room, docs plan, pricing hypothesis, decision ledger,
 
 ## Start Here
 
-- [Vision](vision.md)
-- [Operating Model](operating-model.md)
-- [Portfolio Map](portfolio.md)
-- [Roadmap](roadmap.md)
-- [Templates](templates/index.md)
-- [Playbooks](playbooks/index.md)
-
+- [App Scaffold](app/)
+- [Architecture](architecture.md)
+- [Platform Architecture](docs/architecture/README.md)
+- [v0.1 Scope](docs/product/v0.1-platform-scope.md)
+- [Archived Notebook](archive/notebook/)
