@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pendragon Editable Warroom Mockup</title>
+    <link rel="stylesheet" href="./mockup.css" />
+  </head>
+  <body>
+    <div class="mock-shell">
+      <aside class="sidebar">
+        <img src="../../public/brand/pendragon-lava-glass-horizontal-lockup-transparent.png" alt="Pendragon" />
+        <nav>
+          <a class="active" href="#">Warroom</a>
+          <a href="#">Brief</a>
+          <a href="#">Decisions</a>
+          <a href="#">Docs</a>
+          <a href="#">Forge</a>
+        </nav>
+        <section>
+          <p class="eyebrow">Portfolio</p>
+          <button class="product active">Writing Quest <span>Beta</span></button>
+          <button class="product">Dot Primer <span>Growth</span></button>
+          <button class="product">MockBizOps <span>Prototype</span></button>
+          <button class="product">Vinegar <span>Prototype</span></button>
+        </section>
+      </aside>
+
+      <main>
+        <section class="mock-state command-state">
+          <div class="state-label">State 1: Command View</div>
+          <header class="topbar">
+            <div>
+              <p class="eyebrow">Beta Mode</p>
+              <h1>Writing Quest</h1>
+              <p>Paid beta launch - Target: October 2026</p>
+            </div>
+            <div class="command-bar">
+              <button class="primary">Edit room</button>
+              <button>Export JSON</button>
+              <button>Reset demo</button>
+            </div>
+            <div class="score">
+              <strong>44%</strong>
+              <span>Launch readiness</span>
+            </div>
+          </header>
+
+          <section class="focus-card">
+            <p class="eyebrow">This Week's Launch Focus</p>
+            <h2>Make the paid beta trustworthy.</h2>
+            <p>Make the product trustworthy enough for real users.</p>
+            <ol>
+              <li><span>1</span> Finish Mac beta build</li>
+              <li><span>2</span> Publish local-data promise</li>
+              <li><span>3</span> Record 30-sec demo GIF</li>
+            </ol>
+          </section>
+
+          <section class="panel-grid">
+            <article class="panel tall">
+              <div class="panel-heading">
+                <p class="eyebrow">Readiness</p>
+                <strong>44%</strong>
+              </div>
+              <div class="meter-row"><span>Build</span><b>6/9</b><i style="--w: 67%"></i></div>
+              <div class="meter-row"><span>Docs</span><b>3/7</b><i style="--w: 43%"></i></div>
+              <div class="meter-row"><span>Launch</span><b>2/8</b><i style="--w: 25%"></i></div>
+              <div class="meter-row"><span>Trust</span><b>4/7</b><i style="--w: 57%"></i></div>
+              <div class="meter-row"><span>Revenue</span><b>1/5</b><i style="--w: 20%"></i></div>
+            </article>
+            <article class="panel">
+              <p class="eyebrow">Decision Needed</p>
+              <h3>Price early access at $19 or $29?</h3>
+              <div class="chip-row">
+                <span>Decide now</span>
+                <span>Park it</span>
+              </div>
+            </article>
+            <article class="panel">
+              <p class="eyebrow">Top Risk</p>
+              <h3>Export and save trust are still the launch blockers.</h3>
+              <p>Risks stay visible until they are mitigated, accepted, or turned into launch work.</p>
+            </article>
+          </section>
+        </section>
+
+        <section class="mock-state edit-state">
+          <div class="state-label">State 2: Edit Drawer</div>
+          <header class="edit-header">
+            <div>
+              <p class="eyebrow">Room Editor</p>
+              <h2>Sharpen Writing Quest</h2>
+              <p>Local-only edits. Save when the room feels true.</p>
+            </div>
+            <div class="save-state">Saved locally - just now</div>
+          </header>
+
+          <form class="editor">
+            <label>
+              <span>This week's focus</span>
+              <textarea>Make the paid beta trustworthy.</textarea>
+            </label>
+            <fieldset>
+              <legend>Next three actions</legend>
+              <input value="Finish Mac beta build" />
+              <input value="Publish local-data promise" />
+              <input value="Record 30-sec demo GIF" />
+            </fieldset>
+            <label>
+              <span>Decision needed</span>
+              <textarea>Price early access at $19 or $29?</textarea>
+            </label>
+            <label>
+              <span>Top risk</span>
+              <textarea>Export and save trust are still the launch blockers.</textarea>
+            </label>
+            <fieldset class="readiness-edit">
+              <legend>Readiness</legend>
+              <label><span>Build</span><input value="6" /><em>/</em><input value="9" /></label>
+              <label><span>Docs</span><input value="3" /><em>/</em><input value="7" /></label>
+              <label><span>Launch</span><input value="2" /><em>/</em><input value="8" /></label>
+              <label><span>Trust</span><input value="4" /><em>/</em><input value="7" /></label>
+              <label><span>Revenue</span><input value="1" /><em>/</em><input value="5" /></label>
+            </fieldset>
+            <div class="form-actions">
+              <button class="primary" type="button">Save changes</button>
+              <button type="button">Cancel</button>
+            </div>
+          </form>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

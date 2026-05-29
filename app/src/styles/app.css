@@ -31,6 +31,10 @@ a {
   font: inherit;
 }
 
+button {
+  cursor: pointer;
+}
+
 .shell {
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
@@ -129,8 +133,9 @@ a {
 
 .topbar {
   align-items: center;
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
 .topbar h1 {
@@ -163,6 +168,58 @@ a {
 
 .score small {
   color: var(--muted);
+}
+
+.command-bar,
+.form-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.primary-button,
+.quiet-button {
+  border-radius: 8px;
+  font-weight: 800;
+  padding: 10px 12px;
+}
+
+.primary-button {
+  background: var(--ember);
+  border: 1px solid var(--ember);
+  color: #160503;
+}
+
+.quiet-button {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--line-soft);
+  color: var(--text);
+}
+
+.save-status {
+  align-items: center;
+  background: rgba(255,255,255,0.035);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  color: var(--text);
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  max-width: 980px;
+  padding: 10px 12px;
+}
+
+.save-status small {
+  color: var(--muted);
+}
+
+.error-message {
+  background: rgba(255, 92, 30, 0.1);
+  border: 1px solid rgba(255, 92, 30, 0.28);
+  border-radius: 8px;
+  color: var(--text);
+  margin: 0;
+  max-width: 980px;
+  padding: 12px;
 }
 
 .focus-card,
@@ -315,6 +372,106 @@ a {
   color: var(--muted);
 }
 
+.editor-panel {
+  background:
+    radial-gradient(circle at 95% 12%, rgba(255, 92, 30, 0.09), transparent 30%),
+    linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.018));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 18px;
+  max-width: 980px;
+  padding: 24px;
+}
+
+.editor-panel__header {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.editor-panel__header h2 {
+  font-size: 28px;
+  line-height: 1.12;
+  margin: 8px 0;
+}
+
+.editor-panel__header p:not(.eyebrow) {
+  color: var(--muted);
+  margin: 0;
+}
+
+.editor-form {
+  display: grid;
+  gap: 16px;
+}
+
+.editor-form label,
+.editor-form fieldset {
+  border: 0;
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  min-width: 0;
+  padding: 0;
+}
+
+.editor-form label span,
+.editor-form legend {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.editor-form textarea,
+.editor-form input {
+  background: rgba(255,255,255,0.055);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  color: var(--text);
+  min-width: 0;
+  padding: 12px;
+}
+
+.editor-form textarea:focus,
+.editor-form input:focus {
+  border-color: rgba(255, 92, 30, 0.55);
+  outline: 2px solid rgba(255, 92, 30, 0.12);
+}
+
+.editor-form textarea {
+  resize: vertical;
+}
+
+.readiness-edit {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.readiness-edit legend {
+  grid-column: 1 / -1;
+}
+
+.readiness-edit label {
+  background: rgba(255,255,255,0.035);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  grid-template-columns: 1fr 48px auto 48px;
+  padding: 10px;
+}
+
+.readiness-edit label span {
+  grid-column: 1 / -1;
+}
+
+.readiness-edit em {
+  align-self: center;
+  color: var(--dim);
+  font-style: normal;
+}
+
 @media (max-width: 980px) {
   .shell {
     grid-template-columns: 1fr;
@@ -363,6 +520,19 @@ a {
   .grid {
     grid-template-columns: 1fr;
   }
+
+  .topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .command-bar {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .readiness-edit {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 620px) {
@@ -390,8 +560,7 @@ a {
 
   .topbar {
     align-items: stretch;
-    flex-direction: column;
-    gap: 16px;
+    grid-template-columns: 1fr;
   }
 
   .score {
@@ -405,5 +574,25 @@ a {
 
   .focus-card h2 {
     font-size: 25px;
+  }
+
+  .command-bar,
+  .form-actions {
+    flex-wrap: wrap;
+  }
+
+  .command-bar button,
+  .form-actions button {
+    flex: 1 1 120px;
+  }
+
+  .save-status,
+  .editor-panel__header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .readiness-edit {
+    grid-template-columns: 1fr;
   }
 }
