@@ -27,6 +27,8 @@ The current source is plain ES modules, so it can also be served by any static f
 - Writing Quest as the primary dogfood room.
 - Warroom preview panels.
 - Local editable state for the active product room.
+- Launch room tabs for Brief, Decisions, Docs, and Forge.
+- Editable product brief and addable decision ledger entries.
 
 ## Design Mockups
 
