@@ -168,6 +168,48 @@ export const workspaceSeed = {
         { name: "Trust", done: 1, total: 7 },
         { name: "Revenue", done: 0, total: 4 }
       ]
+    },
+    {
+      id: "pendragon",
+      name: "Pendragon",
+      stage: "prototype",
+      status: "Internal beta build",
+      targetDate: "Alongside Writing Quest beta",
+      oneLiner: "A premium launch room for solo founders turning small software products into documented, sellable releases.",
+      user: "Solo software founders with a working prototype and no reliable launch operating system.",
+      currentFocus: "Make the launch room useful enough to run Writing Quest.",
+      decisionNeeded: "When is Pendragon ready for outside founder beta?",
+      topRisk: "Building meta-infrastructure instead of shipping revenue-generating products.",
+      brief: {
+        problem: "Solo founders can build products, but launch work splinters across notes, repos, docs, pricing guesses, and unresolved decisions.",
+        promise: "Pendragon turns product context into a calm launch room: focus, decisions, docs, risks, readiness, and eventually generated launch assets.",
+        pricingHypothesis: "Free internal dogfood first; paid founder beta only after Writing Quest proves the workflow creates launch momentum.",
+        primaryMilestone: "Run Writing Quest beta planning inside Pendragon without falling back to scattered Markdown.",
+        strategicConstraint: "Writing Quest remains the primary proof object; Pendragon work must make that launch easier."
+      },
+      decisions: [
+        {
+          id: "decision-pendragon-beta-readiness",
+          title: "When is Pendragon ready for outside founder beta?",
+          status: "open",
+          context: "Pendragon should not invite outside founders until it proves useful on Writing Quest and at least one secondary portfolio product.",
+          options: ["After Writing Quest paid beta", "After Docs tracker ships", "After Forge can generate a first launch site"],
+          chosenPath: "",
+          revisitTrigger: "When Writing Quest can be planned, documented, and launched from the app without reverting to the notebook."
+        }
+      ],
+      nextActions: [
+        "Dogfood Writing Quest launch room",
+        "Add docs asset tracker",
+        "Define outside beta readiness"
+      ],
+      readiness: [
+        { name: "Build", done: 4, total: 9 },
+        { name: "Docs", done: 4, total: 8 },
+        { name: "Launch", done: 1, total: 8 },
+        { name: "Trust", done: 2, total: 7 },
+        { name: "Revenue", done: 0, total: 5 }
+      ]
     }
   ]
 }

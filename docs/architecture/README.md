@@ -123,3 +123,14 @@ Top risk: save/export/install trust.
 
 Pendragon v0.1 succeeds only if it makes Writing Quest easier to launch.
 
+## Meta-Product Room
+
+Pendragon also gets a product room.
+
+It is a meta-product room, not a replacement for Writing Quest as the proof object.
+
+The guardrail:
+
+> Pendragon work must make Writing Quest easier to launch.
+
+If Pendragon work does not improve the Writing Quest launch path, it waits.
