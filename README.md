@@ -25,5 +25,6 @@ Each product gets a launch room, docs plan, pricing hypothesis, decision ledger,
 - [v0.1 Scope](docs/product/v0.1-platform-scope.md)
 - [v0.2 Editable Warroom Plan](docs/product/v0.2-editable-warroom-plan.md)
 - [v0.3 Launch Room Plan](docs/product/v0.3-launch-room-plan.md)
+- [Pendragon As Meta-Product](docs/product/pendragon-meta-product.md)
 - [Editable Warroom Mockups](docs/design/editable-warroom-mockups.md)
 - [Archived Notebook](archive/notebook/)
