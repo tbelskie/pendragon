@@ -2,11 +2,47 @@ import { workspaceSeed } from "../data/seed.js"
 
 const STORAGE_KEY = "pendragon.workspace.v1"
 
+function mergeProduct(seedProduct, storedProduct = {}) {
+  return {
+    ...seedProduct,
+    ...storedProduct,
+    brief: {
+      ...seedProduct.brief,
+      ...(storedProduct.brief ?? {})
+    },
+    decisions: Array.isArray(storedProduct.decisions)
+      ? storedProduct.decisions
+      : structuredClone(seedProduct.decisions ?? [])
+  }
+}
+
+export function normalizeWorkspace(workspace) {
+  const storedProducts = Array.isArray(workspace?.products) ? workspace.products : []
+  const products = workspaceSeed.products.map((seedProduct) => {
+    const storedProduct = storedProducts.find((product) => product.id === seedProduct.id)
+    return mergeProduct(seedProduct, storedProduct)
+  })
+  const extraProducts = storedProducts
+    .filter((product) => !products.some((seedProduct) => seedProduct.id === product.id))
+    .map((product) => mergeProduct({
+      ...product,
+      brief: {},
+      decisions: []
+    }, product))
+
+  return {
+    ...workspaceSeed,
+    ...workspace,
+    activeProductId: workspace?.activeProductId ?? workspaceSeed.activeProductId,
+    products: [...products, ...extraProducts]
+  }
+}
+
 export function loadWorkspace() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (!stored) return structuredClone(workspaceSeed)
-    return JSON.parse(stored)
+    return normalizeWorkspace(JSON.parse(stored))
   } catch {
     return structuredClone(workspaceSeed)
   }

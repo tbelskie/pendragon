@@ -2,9 +2,25 @@ import { loadWorkspace, resetWorkspace, saveWorkspace } from "./storage/workspac
 import { readinessPercent, stageJobs, stageLabels } from "./domain/stages.js"
 
 let workspace = loadWorkspace()
+let activeView = "warroom"
 let isEditing = false
+let hasUnsavedFormChanges = false
 let statusMessage = "Local-only workspace"
 let errorMessage = ""
+
+const views = [
+  { id: "warroom", label: "Warroom" },
+  { id: "brief", label: "Brief" },
+  { id: "decisions", label: "Decisions" },
+  { id: "docs", label: "Docs" },
+  { id: "forge", label: "Forge" }
+]
+
+const decisionStatusLabels = {
+  open: "Open",
+  chosen: "Chosen",
+  parked: "Parked"
+}
 
 function activeProduct() {
   return workspace.products.find((product) => product.id === workspace.activeProductId) ?? workspace.products[0]
@@ -50,21 +66,112 @@ function commitWorkspace(nextWorkspace, nextStatus) {
   errorMessage = ""
 }
 
+function canDiscardActiveWork() {
+  return !(isEditing || hasUnsavedFormChanges) || window.confirm("Discard unsaved edits?")
+}
+
 function setActiveProduct(productId) {
+  if (!canDiscardActiveWork()) return
+
   const nextWorkspace = { ...workspace, activeProductId: productId }
   isEditing = false
+  hasUnsavedFormChanges = false
   commitWorkspace(nextWorkspace, "Local-only workspace")
+  render()
+}
+
+function setActiveView(view) {
+  if (!canDiscardActiveWork()) return
+
+  activeView = view
+  isEditing = false
+  hasUnsavedFormChanges = false
+  errorMessage = ""
   render()
 }
 
 function editRoom() {
   isEditing = true
+  hasUnsavedFormChanges = false
   errorMessage = ""
+  render()
+}
+
+function saveBrief(event) {
+  event.preventDefault()
+
+  const product = activeProduct()
+  const form = new FormData(event.currentTarget)
+  const nextProduct = {
+    ...product,
+    oneLiner: String(form.get("oneLiner") ?? "").trim(),
+    user: String(form.get("user") ?? "").trim(),
+    brief: {
+      ...(product.brief ?? {}),
+      problem: String(form.get("problem") ?? "").trim(),
+      promise: String(form.get("promise") ?? "").trim(),
+      pricingHypothesis: String(form.get("pricingHypothesis") ?? "").trim(),
+      primaryMilestone: String(form.get("primaryMilestone") ?? "").trim(),
+      strategicConstraint: String(form.get("strategicConstraint") ?? "").trim()
+    }
+  }
+
+  try {
+    commitWorkspace(workspaceWithActiveProduct(nextProduct), `Brief saved at ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`)
+    hasUnsavedFormChanges = false
+  } catch {
+    errorMessage = "Could not save the brief locally. Keep this tab open and try again."
+  }
+
+  render()
+}
+
+function addDecision(event) {
+  event.preventDefault()
+
+  const product = activeProduct()
+  const form = new FormData(event.currentTarget)
+  const title = String(form.get("title") ?? "").trim()
+
+  if (!title) {
+    errorMessage = "Decision title is required."
+    render()
+    return
+  }
+
+  const options = String(form.get("options") ?? "")
+    .split("\n")
+    .map((option) => option.trim())
+    .filter(Boolean)
+
+  const decision = {
+    id: `decision-${Date.now()}`,
+    title,
+    status: String(form.get("status") ?? "open"),
+    context: String(form.get("context") ?? "").trim(),
+    options,
+    chosenPath: String(form.get("chosenPath") ?? "").trim(),
+    revisitTrigger: String(form.get("revisitTrigger") ?? "").trim()
+  }
+
+  const nextProduct = {
+    ...product,
+    decisions: [...(product.decisions ?? []), decision]
+  }
+
+  try {
+    commitWorkspace(workspaceWithActiveProduct(nextProduct), `Decision added at ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`)
+    hasUnsavedFormChanges = false
+  } catch {
+    errorMessage = "Could not save the decision locally. Keep this tab open and try again."
+  }
+
   render()
 }
 
 function cancelEdit() {
   isEditing = false
+  hasUnsavedFormChanges = false
   errorMessage = ""
   statusMessage = "No changes saved"
   render()
@@ -97,6 +204,7 @@ function saveRoom(event) {
     const nextWorkspace = workspaceWithActiveProduct(nextProduct)
     commitWorkspace(nextWorkspace, `Saved locally at ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`)
     isEditing = false
+    hasUnsavedFormChanges = false
   } catch {
     errorMessage = "Could not save locally. Keep this editor open and try again."
   }
@@ -109,6 +217,7 @@ function resetDemo() {
 
   workspace = resetWorkspace()
   isEditing = false
+  hasUnsavedFormChanges = false
   statusMessage = "Demo data restored"
   errorMessage = ""
   render()
@@ -140,6 +249,19 @@ function renderProductNav(product) {
         <button class="product-nav__item${active}" data-product-id="${escapeHtml(item.id)}">
           <span>${escapeHtml(item.name)}</span>
           <small>${escapeHtml(stageLabels[item.stage])}</small>
+        </button>
+      `
+    })
+    .join("")
+}
+
+function renderViewNav() {
+  return views
+    .map((view) => {
+      const active = view.id === activeView ? " active" : ""
+      return `
+        <button class="nav__link${active}" type="button" data-view="${view.id}">
+          ${escapeHtml(view.label)}
         </button>
       `
     })
@@ -248,9 +370,275 @@ function renderEditor(product) {
   `
 }
 
+function renderWarroom(product) {
+  const percent = readinessPercent(product)
+
+  return `
+    ${errorMessage ? `<p class="error-message">${escapeHtml(errorMessage)}</p>` : ""}
+    ${isEditing ? renderEditor(product) : ""}
+
+    <section class="focus-card">
+      <p class="eyebrow">This Week's Launch Focus</p>
+      <h2>${escapeHtml(product.currentFocus)}</h2>
+      <p>${escapeHtml(stageJobs[product.stage])}</p>
+      <ol class="actions">
+        ${renderActions(product)}
+      </ol>
+    </section>
+
+    <section class="grid">
+      <article class="panel readiness">
+        <div class="panel__heading">
+          <p class="eyebrow">Readiness</p>
+          <strong>${percent}%</strong>
+        </div>
+        ${renderReadiness(product)}
+      </article>
+
+      <article class="panel">
+        <p class="eyebrow">Decision Needed</p>
+        <h3>${escapeHtml(product.decisionNeeded)}</h3>
+        <div class="choice-row">
+          <button>Decide now</button>
+          <button class="secondary">Park it</button>
+        </div>
+      </article>
+
+      <article class="panel risk">
+        <p class="eyebrow">Top Risk</p>
+        <h3>${escapeHtml(product.topRisk)}</h3>
+        <p>Risks stay visible until they are mitigated, accepted, or turned into launch work.</p>
+      </article>
+
+      <article class="panel forge">
+        <p class="eyebrow">Forge</p>
+        <h3>Build Launch Site</h3>
+        <p>Future module: turn this product room into a landing page, docs, FAQ, pricing, changelog, and trust surface.</p>
+        <button disabled>Coming next</button>
+      </article>
+    </section>
+  `
+}
+
+function renderBrief(product) {
+  const brief = product.brief ?? {}
+
+  return `
+    ${errorMessage ? `<p class="error-message">${escapeHtml(errorMessage)}</p>` : ""}
+    <section class="launch-surface">
+      <article class="brief-hero">
+        <p class="eyebrow">Product Brief</p>
+        <h2>${escapeHtml(product.oneLiner)}</h2>
+        <p>${escapeHtml(brief.promise)}</p>
+        <div class="brief-facts">
+          <span><strong>Audience</strong>${escapeHtml(product.user)}</span>
+          <span><strong>Milestone</strong>${escapeHtml(brief.primaryMilestone)}</span>
+          <span><strong>Pricing</strong>${escapeHtml(brief.pricingHypothesis)}</span>
+        </div>
+      </article>
+
+      <form id="brief-form" class="editor-form brief-form">
+        <label for="briefOneLiner">
+          <span>One-liner</span>
+          <textarea id="briefOneLiner" name="oneLiner" rows="2">${escapeHtml(product.oneLiner)}</textarea>
+        </label>
+        <label for="briefUser">
+          <span>Audience</span>
+          <textarea id="briefUser" name="user" rows="2">${escapeHtml(product.user)}</textarea>
+        </label>
+        <label for="briefProblem">
+          <span>Problem</span>
+          <textarea id="briefProblem" name="problem" rows="3">${escapeHtml(brief.problem)}</textarea>
+        </label>
+        <label for="briefPromise">
+          <span>Promise</span>
+          <textarea id="briefPromise" name="promise" rows="3">${escapeHtml(brief.promise)}</textarea>
+        </label>
+        <label for="briefPricing">
+          <span>Pricing hypothesis</span>
+          <textarea id="briefPricing" name="pricingHypothesis" rows="2">${escapeHtml(brief.pricingHypothesis)}</textarea>
+        </label>
+        <label for="briefMilestone">
+          <span>Primary milestone</span>
+          <textarea id="briefMilestone" name="primaryMilestone" rows="2">${escapeHtml(brief.primaryMilestone)}</textarea>
+        </label>
+        <label for="briefConstraint">
+          <span>Strategic constraint</span>
+          <textarea id="briefConstraint" name="strategicConstraint" rows="2">${escapeHtml(brief.strategicConstraint)}</textarea>
+        </label>
+        <div class="form-actions">
+          <button class="primary-button" type="submit">Save brief</button>
+        </div>
+      </form>
+    </section>
+  `
+}
+
+function renderDecisionCard(decision) {
+  const options = decision.options?.length
+    ? decision.options.map((option) => `<li>${escapeHtml(option)}</li>`).join("")
+    : "<li>No options captured yet.</li>"
+
+  return `
+    <article class="decision-card">
+      <div class="decision-card__header">
+        <span class="status-chip status-chip--${escapeHtml(decision.status)}">${escapeHtml(decisionStatusLabels[decision.status] ?? decision.status)}</span>
+        <h3>${escapeHtml(decision.title)}</h3>
+      </div>
+      <p>${escapeHtml(decision.context)}</p>
+      <div class="decision-card__body">
+        <div>
+          <strong>Options</strong>
+          <ul>${options}</ul>
+        </div>
+        <div>
+          <strong>Chosen path</strong>
+          <p>${escapeHtml(decision.chosenPath || "Not chosen yet.")}</p>
+        </div>
+        <div>
+          <strong>Revisit trigger</strong>
+          <p>${escapeHtml(decision.revisitTrigger || "No trigger captured.")}</p>
+        </div>
+      </div>
+    </article>
+  `
+}
+
+function renderDecisions(product) {
+  const decisions = product.decisions ?? []
+
+  return `
+    ${errorMessage ? `<p class="error-message">${escapeHtml(errorMessage)}</p>` : ""}
+    <section class="launch-surface">
+      <div class="surface-heading">
+        <div>
+          <p class="eyebrow">Decision Ledger</p>
+          <h2>Stop relitigating. Start deciding.</h2>
+        </div>
+        <span>${decisions.length} captured</span>
+      </div>
+
+      <div class="decision-list">
+        ${decisions.length ? decisions.map(renderDecisionCard).join("") : `
+          <article class="empty-state">
+            <p class="eyebrow">No Decisions Yet</p>
+            <h3>Capture the choice before it becomes launch fog.</h3>
+          </article>
+        `}
+      </div>
+
+      <form id="decision-form" class="editor-form decision-form">
+        <p class="eyebrow">Add Decision</p>
+        <label for="decisionTitle">
+          <span>Title</span>
+          <input id="decisionTitle" name="title" placeholder="What needs to be decided?" />
+        </label>
+        <label for="decisionStatus">
+          <span>Status</span>
+          <select id="decisionStatus" name="status">
+            <option value="open">Open</option>
+            <option value="chosen">Chosen</option>
+            <option value="parked">Parked</option>
+          </select>
+        </label>
+        <label for="decisionContext">
+          <span>Context</span>
+          <textarea id="decisionContext" name="context" rows="3" placeholder="Why does this decision matter?"></textarea>
+        </label>
+        <label for="decisionOptions">
+          <span>Options</span>
+          <textarea id="decisionOptions" name="options" rows="3" placeholder="One option per line"></textarea>
+        </label>
+        <label for="decisionChosenPath">
+          <span>Chosen path</span>
+          <textarea id="decisionChosenPath" name="chosenPath" rows="2" placeholder="Leave blank if still open"></textarea>
+        </label>
+        <label for="decisionRevisit">
+          <span>Revisit trigger</span>
+          <textarea id="decisionRevisit" name="revisitTrigger" rows="2" placeholder="What evidence would reopen this?"></textarea>
+        </label>
+        <div class="form-actions">
+          <button class="primary-button" type="submit">Add decision</button>
+        </div>
+      </form>
+    </section>
+  `
+}
+
+function renderDocs(product) {
+  const assets = [
+    "Landing page",
+    "Beta instructions",
+    "Privacy/trust",
+    "FAQ",
+    "Changelog",
+    "Support/contact"
+  ]
+
+  return `
+    <section class="launch-surface">
+      <div class="surface-heading">
+        <div>
+          <p class="eyebrow">Docs Surface</p>
+          <h2>${escapeHtml(product.name)} launch knowledge map</h2>
+        </div>
+        <span>Tracker next</span>
+      </div>
+      <div class="asset-grid">
+        ${assets.map((asset) => `
+          <article class="asset-card">
+            <strong>${escapeHtml(asset)}</strong>
+            <p>Needed for a credible launch surface.</p>
+          </article>
+        `).join("")}
+      </div>
+    </section>
+  `
+}
+
+function renderForge(product) {
+  const brief = product.brief ?? {}
+  const readySignals = [
+    ["Brief", product.oneLiner && brief.promise],
+    ["Decision", product.decisions?.length],
+    ["Docs", product.readiness?.find((section) => section.name === "Docs")?.done > 0],
+    ["Trust", product.readiness?.find((section) => section.name === "Trust")?.done > 0]
+  ]
+
+  return `
+    <section class="launch-surface forge-surface">
+      <div>
+        <p class="eyebrow">Forge</p>
+        <h2>Build the launch surface from the room.</h2>
+        <p>Forge will eventually turn the product room into a landing page, docs, FAQ, pricing, changelog, and trust page.</p>
+      </div>
+      <div class="forge-readiness">
+        ${readySignals.map(([label, ready]) => `
+          <article class="${ready ? "ready" : ""}">
+            <span>${ready ? "Ready" : "Missing"}</span>
+            <strong>${escapeHtml(label)}</strong>
+          </article>
+        `).join("")}
+      </div>
+      <button class="primary-button" type="button" disabled>Forge not unlocked yet</button>
+    </section>
+  `
+}
+
+function renderActiveView(product) {
+  if (activeView === "brief") return renderBrief(product)
+  if (activeView === "decisions") return renderDecisions(product)
+  if (activeView === "docs") return renderDocs(product)
+  if (activeView === "forge") return renderForge(product)
+  return renderWarroom(product)
+}
+
 function bindEvents() {
   document.querySelectorAll("[data-product-id]").forEach((button) => {
     button.addEventListener("click", () => setActiveProduct(button.dataset.productId))
+  })
+  document.querySelectorAll("[data-view]").forEach((button) => {
+    button.addEventListener("click", () => setActiveView(button.dataset.view))
   })
 
   document.querySelector("[data-action='edit']")?.addEventListener("click", editRoom)
@@ -260,6 +648,13 @@ function bindEvents() {
     button.addEventListener("click", cancelEdit)
   })
   document.querySelector("#room-editor")?.addEventListener("submit", saveRoom)
+  document.querySelector("#brief-form")?.addEventListener("submit", saveBrief)
+  document.querySelector("#decision-form")?.addEventListener("submit", addDecision)
+  document.querySelectorAll("form").forEach((form) => {
+    form.addEventListener("input", () => {
+      hasUnsavedFormChanges = true
+    })
+  })
 }
 
 function render() {
@@ -274,11 +669,7 @@ function render() {
           <img src="./public/brand/pendragon-lava-glass-horizontal-lockup-transparent.png" alt="Pendragon" />
         </a>
         <nav class="nav">
-          <a class="nav__link active" href="#">Warroom</a>
-          <a class="nav__link" href="#">Brief</a>
-          <a class="nav__link" href="#">Decisions</a>
-          <a class="nav__link" href="#">Docs</a>
-          <a class="nav__link" href="#">Forge</a>
+          ${renderViewNav()}
         </nav>
         <section class="product-nav" aria-label="Products">
           <p>Portfolio</p>
@@ -294,7 +685,7 @@ function render() {
             <p>${escapeHtml(product.status)} - Target: ${escapeHtml(product.targetDate)}</p>
           </div>
           <div class="command-bar" aria-label="Room commands">
-            <button class="primary-button" type="button" data-action="edit">Edit room</button>
+            ${activeView === "warroom" ? `<button class="primary-button" type="button" data-action="edit">Edit room</button>` : ""}
             <button class="quiet-button" type="button" data-action="export">Export JSON</button>
             <button class="quiet-button" type="button" data-action="reset">Reset demo</button>
           </div>
@@ -309,49 +700,7 @@ function render() {
           <small>Data is stored in this browser for now.</small>
         </div>
 
-        ${errorMessage ? `<p class="error-message">${escapeHtml(errorMessage)}</p>` : ""}
-        ${isEditing ? renderEditor(product) : ""}
-
-        <section class="focus-card">
-          <p class="eyebrow">This Week's Launch Focus</p>
-          <h2>${escapeHtml(product.currentFocus)}</h2>
-          <p>${escapeHtml(stageJobs[product.stage])}</p>
-          <ol class="actions">
-            ${renderActions(product)}
-          </ol>
-        </section>
-
-        <section class="grid">
-          <article class="panel readiness">
-            <div class="panel__heading">
-              <p class="eyebrow">Readiness</p>
-              <strong>${percent}%</strong>
-            </div>
-            ${renderReadiness(product)}
-          </article>
-
-          <article class="panel">
-            <p class="eyebrow">Decision Needed</p>
-            <h3>${escapeHtml(product.decisionNeeded)}</h3>
-            <div class="choice-row">
-              <button>Decide now</button>
-              <button class="secondary">Park it</button>
-            </div>
-          </article>
-
-          <article class="panel risk">
-            <p class="eyebrow">Top Risk</p>
-            <h3>${escapeHtml(product.topRisk)}</h3>
-            <p>Risks stay visible until they are mitigated, accepted, or turned into launch work.</p>
-          </article>
-
-          <article class="panel forge">
-            <p class="eyebrow">Forge</p>
-            <h3>Build Launch Site</h3>
-            <p>Future module: turn this product room into a landing page, docs, FAQ, pricing, changelog, and trust surface.</p>
-            <button disabled>Coming next</button>
-          </article>
-        </section>
+        ${renderActiveView(product)}
       </main>
     </div>
   `
@@ -363,6 +712,7 @@ window.addEventListener("keydown", (event) => {
   if (event.key === "R" && event.shiftKey && event.metaKey) {
     workspace = resetWorkspace()
     isEditing = false
+    hasUnsavedFormChanges = false
     statusMessage = "Demo data restored"
     errorMessage = ""
     render()
