@@ -423,7 +423,8 @@ button {
 }
 
 .editor-form label span,
-.editor-form legend {
+.editor-form legend,
+.docs-form label span {
   color: var(--muted);
   font-size: 13px;
   font-weight: 800;
@@ -431,7 +432,10 @@ button {
 
 .editor-form textarea,
 .editor-form input,
-.editor-form select {
+.editor-form select,
+.docs-form textarea,
+.docs-form input,
+.docs-form select {
   background: rgba(255,255,255,0.055);
   border: 1px solid var(--line-soft);
   border-radius: 8px;
@@ -442,12 +446,16 @@ button {
 
 .editor-form textarea:focus,
 .editor-form input:focus,
-.editor-form select:focus {
+.editor-form select:focus,
+.docs-form textarea:focus,
+.docs-form input:focus,
+.docs-form select:focus {
   border-color: rgba(255, 92, 30, 0.55);
   outline: 2px solid rgba(255, 92, 30, 0.12);
 }
 
-.editor-form textarea {
+.editor-form textarea,
+.docs-form textarea {
   resize: vertical;
 }
 
@@ -491,6 +499,8 @@ button {
 .brief-form,
 .empty-state,
 .asset-card,
+.doc-asset,
+.docs-command article,
 .forge-surface {
   background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.018));
   border: 1px solid var(--line);
@@ -667,6 +677,126 @@ button {
   margin: 0;
 }
 
+.docs-command {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.docs-command article {
+  display: grid;
+  gap: 4px;
+  padding: 16px;
+}
+
+.docs-command strong {
+  color: var(--ember);
+  font-size: 26px;
+  line-height: 1;
+}
+
+.docs-command span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.docs-form {
+  display: grid;
+  gap: 14px;
+}
+
+.docs-tracker {
+  display: grid;
+  gap: 12px;
+}
+
+.doc-asset {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.doc-asset--ready {
+  border-color: rgba(91, 207, 132, 0.28);
+}
+
+.doc-asset--blocked {
+  border-color: rgba(255, 92, 30, 0.34);
+}
+
+.doc-asset__header {
+  align-items: start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.doc-asset__header h3 {
+  font-size: 21px;
+  line-height: 1.2;
+  margin: 8px 0 0;
+}
+
+.doc-asset p {
+  color: var(--muted);
+  margin: 0;
+}
+
+.doc-chip,
+.priority-pill {
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  padding: 6px 9px;
+  text-transform: uppercase;
+}
+
+.doc-chip {
+  color: var(--text);
+}
+
+.doc-chip--missing {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid var(--line-soft);
+  color: var(--muted);
+}
+
+.doc-chip--drafting {
+  background: rgba(117, 167, 255, 0.13);
+  border: 1px solid rgba(117, 167, 255, 0.28);
+}
+
+.doc-chip--blocked {
+  background: rgba(255, 92, 30, 0.14);
+  border: 1px solid rgba(255, 92, 30, 0.32);
+}
+
+.doc-chip--ready {
+  background: rgba(91, 207, 132, 0.14);
+  border: 1px solid rgba(91, 207, 132, 0.28);
+}
+
+.priority-pill {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--line-soft);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.doc-asset__fields {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 150px minmax(240px, 1fr) minmax(180px, 0.8fr);
+}
+
+.doc-asset__fields label {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
 .forge-surface {
   padding: 28px;
 }
@@ -760,7 +890,9 @@ button {
   .brief-facts,
   .decision-card__body,
   .asset-grid,
-  .forge-readiness {
+  .forge-readiness,
+  .docs-command,
+  .doc-asset__fields {
     grid-template-columns: 1fr;
   }
 }
@@ -817,7 +949,8 @@ button {
   }
 
   .save-status,
-  .editor-panel__header {
+  .editor-panel__header,
+  .doc-asset__header {
     align-items: stretch;
     flex-direction: column;
   }

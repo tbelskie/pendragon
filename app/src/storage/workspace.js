@@ -2,6 +2,17 @@ import { workspaceSeed } from "../data/seed.js"
 
 const STORAGE_KEY = "pendragon.workspace.v1"
 
+function mergeItemsById(seedItems = [], storedItems = []) {
+  const storedById = new Map(storedItems.map((item) => [item.id, item]))
+  const mergedSeedItems = seedItems.map((seedItem) => ({
+    ...seedItem,
+    ...(storedById.get(seedItem.id) ?? {})
+  }))
+  const extraItems = storedItems.filter((item) => !seedItems.some((seedItem) => seedItem.id === item.id))
+
+  return [...mergedSeedItems, ...extraItems]
+}
+
 function mergeProduct(seedProduct, storedProduct = {}) {
   return {
     ...seedProduct,
@@ -12,7 +23,11 @@ function mergeProduct(seedProduct, storedProduct = {}) {
     },
     decisions: Array.isArray(storedProduct.decisions)
       ? storedProduct.decisions
-      : structuredClone(seedProduct.decisions ?? [])
+      : structuredClone(seedProduct.decisions ?? []),
+    docsAssets: mergeItemsById(
+      structuredClone(seedProduct.docsAssets ?? []),
+      Array.isArray(storedProduct.docsAssets) ? storedProduct.docsAssets : []
+    )
   }
 }
 

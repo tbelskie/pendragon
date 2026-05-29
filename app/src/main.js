@@ -22,6 +22,15 @@ const decisionStatusLabels = {
   parked: "Parked"
 }
 
+const docsStatusLabels = {
+  missing: "Missing",
+  drafting: "Drafting",
+  blocked: "Blocked",
+  ready: "Ready"
+}
+
+const docsStatusOrder = ["missing", "drafting", "blocked", "ready"]
+
 function activeProduct() {
   return workspace.products.find((product) => product.id === workspace.activeProductId) ?? workspace.products[0]
 }
@@ -44,6 +53,36 @@ function normalizeReadiness(doneValue, totalValue) {
   const total = Math.max(1, numberValue(totalValue, 1))
   const done = Math.min(total, Math.max(0, numberValue(doneValue, 0)))
   return { done, total }
+}
+
+function productDocsAssets(product) {
+  return Array.isArray(product.docsAssets) ? product.docsAssets : []
+}
+
+function docsStats(product) {
+  const assets = productDocsAssets(product)
+  const ready = assets.filter((asset) => asset.status === "ready").length
+  const drafting = assets.filter((asset) => asset.status === "drafting").length
+  const blocked = assets.filter((asset) => asset.status === "blocked").length
+  const missing = assets.filter((asset) => asset.status === "missing").length
+  const criticalOpen = assets.filter((asset) => asset.priority === "Critical" && asset.status !== "ready").length
+  const percent = assets.length ? Math.round((ready / assets.length) * 100) : 0
+
+  return { assets, ready, drafting, blocked, missing, criticalOpen, percent }
+}
+
+function syncDocsReadiness(product, docsAssets) {
+  const done = docsAssets.filter((asset) => asset.status === "ready").length
+  const total = Math.max(1, docsAssets.length)
+  let hasDocsSection = false
+  const readiness = (Array.isArray(product.readiness) ? product.readiness : []).map((section) => {
+    if (section.name !== "Docs") return section
+
+    hasDocsSection = true
+    return { ...section, done, total }
+  })
+
+  return hasDocsSection ? readiness : [...readiness, { name: "Docs", done, total }]
 }
 
 function activeProductIndex() {
@@ -164,6 +203,33 @@ function addDecision(event) {
     hasUnsavedFormChanges = false
   } catch {
     errorMessage = "Could not save the decision locally. Keep this tab open and try again."
+  }
+
+  render()
+}
+
+function saveDocsAssets(event) {
+  event.preventDefault()
+
+  const product = activeProduct()
+  const form = new FormData(event.currentTarget)
+  const docsAssets = productDocsAssets(product).map((asset) => ({
+    ...asset,
+    status: String(form.get(`doc-${asset.id}-status`) ?? asset.status),
+    nextStep: String(form.get(`doc-${asset.id}-nextStep`) ?? "").trim(),
+    evidence: String(form.get(`doc-${asset.id}-evidence`) ?? "").trim()
+  }))
+  const nextProduct = {
+    ...product,
+    docsAssets,
+    readiness: syncDocsReadiness(product, docsAssets)
+  }
+
+  try {
+    commitWorkspace(workspaceWithActiveProduct(nextProduct), `Docs tracker saved at ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`)
+    hasUnsavedFormChanges = false
+  } catch {
+    errorMessage = "Could not save the docs tracker locally. Keep this tab open and try again."
   }
 
   render()
@@ -565,43 +631,97 @@ function renderDecisions(product) {
   `
 }
 
+function renderDocsStatusOptions(currentStatus) {
+  return docsStatusOrder
+    .map((status) => `
+      <option value="${status}" ${status === currentStatus ? "selected" : ""}>${escapeHtml(docsStatusLabels[status])}</option>
+    `)
+    .join("")
+}
+
+function renderDocAsset(asset) {
+  return `
+    <article class="doc-asset doc-asset--${escapeHtml(asset.status)}">
+      <div class="doc-asset__header">
+        <div>
+          <span class="doc-chip doc-chip--${escapeHtml(asset.status)}">${escapeHtml(docsStatusLabels[asset.status] ?? asset.status)}</span>
+          <h3>${escapeHtml(asset.title)}</h3>
+        </div>
+        <span class="priority-pill">${escapeHtml(asset.priority)}</span>
+      </div>
+      <p>${escapeHtml(asset.purpose)}</p>
+      <div class="doc-asset__fields">
+        <label for="doc-${escapeHtml(asset.id)}-status">
+          <span>Status</span>
+          <select id="doc-${escapeHtml(asset.id)}-status" name="doc-${escapeHtml(asset.id)}-status">
+            ${renderDocsStatusOptions(asset.status)}
+          </select>
+        </label>
+        <label for="doc-${escapeHtml(asset.id)}-nextStep">
+          <span>Next move</span>
+          <textarea id="doc-${escapeHtml(asset.id)}-nextStep" name="doc-${escapeHtml(asset.id)}-nextStep" rows="2">${escapeHtml(asset.nextStep)}</textarea>
+        </label>
+        <label for="doc-${escapeHtml(asset.id)}-evidence">
+          <span>Evidence</span>
+          <input id="doc-${escapeHtml(asset.id)}-evidence" name="doc-${escapeHtml(asset.id)}-evidence" value="${escapeHtml(asset.evidence)}" placeholder="Draft, URL, repo note, or decision" />
+        </label>
+      </div>
+    </article>
+  `
+}
+
 function renderDocs(product) {
-  const assets = [
-    "Landing page",
-    "Beta instructions",
-    "Privacy/trust",
-    "FAQ",
-    "Changelog",
-    "Support/contact"
-  ]
+  const stats = docsStats(product)
 
   return `
+    ${errorMessage ? `<p class="error-message">${escapeHtml(errorMessage)}</p>` : ""}
     <section class="launch-surface">
       <div class="surface-heading">
         <div>
           <p class="eyebrow">Docs Surface</p>
           <h2>${escapeHtml(product.name)} launch knowledge map</h2>
         </div>
-        <span>Tracker next</span>
+        <span>${stats.percent}% docs ready</span>
       </div>
-      <div class="asset-grid">
-        ${assets.map((asset) => `
-          <article class="asset-card">
-            <strong>${escapeHtml(asset)}</strong>
-            <p>Needed for a credible launch surface.</p>
-          </article>
-        `).join("")}
+
+      <div class="docs-command">
+        <article>
+          <strong>${stats.ready}/${stats.assets.length}</strong>
+          <span>Assets ready</span>
+        </article>
+        <article>
+          <strong>${stats.criticalOpen}</strong>
+          <span>Critical open</span>
+        </article>
+        <article>
+          <strong>${stats.blocked}</strong>
+          <span>Blocked</span>
+        </article>
+        <article>
+          <strong>${stats.drafting}</strong>
+          <span>Drafting</span>
+        </article>
       </div>
+
+      <form id="docs-form" class="docs-form">
+        <div class="docs-tracker">
+          ${stats.assets.map(renderDocAsset).join("")}
+        </div>
+        <div class="form-actions">
+          <button class="primary-button" type="submit">Save tracker</button>
+        </div>
+      </form>
     </section>
   `
 }
 
 function renderForge(product) {
   const brief = product.brief ?? {}
+  const stats = docsStats(product)
   const readySignals = [
     ["Brief", product.oneLiner && brief.promise],
     ["Decision", product.decisions?.length],
-    ["Docs", product.readiness?.find((section) => section.name === "Docs")?.done > 0],
+    ["Docs", stats.ready > 0],
     ["Trust", product.readiness?.find((section) => section.name === "Trust")?.done > 0]
   ]
 
@@ -650,10 +770,14 @@ function bindEvents() {
   document.querySelector("#room-editor")?.addEventListener("submit", saveRoom)
   document.querySelector("#brief-form")?.addEventListener("submit", saveBrief)
   document.querySelector("#decision-form")?.addEventListener("submit", addDecision)
+  document.querySelector("#docs-form")?.addEventListener("submit", saveDocsAssets)
   document.querySelectorAll("form").forEach((form) => {
-    form.addEventListener("input", () => {
+    const markDirty = () => {
       hasUnsavedFormChanges = true
-    })
+    }
+
+    form.addEventListener("input", markDirty)
+    form.addEventListener("change", markDirty)
   })
 }
 

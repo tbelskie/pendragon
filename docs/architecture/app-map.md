@@ -52,6 +52,7 @@ For internal dogfooding, seed:
 - Dot Primer
 - MockBizOps
 - Vinegar
+- Pendragon
 
 ### Product Warroom
 
@@ -90,6 +91,8 @@ Tracks the product's public knowledge surface:
 - support
 - API reference, if needed
 
+In v0.4, Docs becomes an editable tracker. Each docs asset has status, priority, purpose, next move, and evidence. Saving the tracker syncs the product's Docs readiness row.
+
 ### Forge
 
 Placeholder in v0.1.
@@ -113,4 +116,3 @@ Keep the shell minimal:
 - Forge
 
 Do not add a broad settings area until persistence/import/export requires it.
-
