@@ -26,6 +26,11 @@ The current source is plain ES modules, so it can also be served by any static f
 - Stage-aware product metadata.
 - Writing Quest as the primary dogfood room.
 - Warroom preview panels.
+- Local editable state for the active product room.
+
+## Design Mockups
+
+- [Editable Warroom](mockups/editable-warroom/)
 
 ## Not Yet
 
@@ -34,4 +39,3 @@ The current source is plain ES modules, so it can also be served by any static f
 - AI generation.
 - GitHub integration.
 - Real Forge generation.
-- Editable persistent state.

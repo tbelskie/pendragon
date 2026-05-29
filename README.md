@@ -23,4 +23,6 @@ Each product gets a launch room, docs plan, pricing hypothesis, decision ledger,
 - [Architecture](architecture.md)
 - [Platform Architecture](docs/architecture/README.md)
 - [v0.1 Scope](docs/product/v0.1-platform-scope.md)
+- [v0.2 Editable Warroom Plan](docs/product/v0.2-editable-warroom-plan.md)
+- [Editable Warroom Mockups](docs/design/editable-warroom-mockups.md)
 - [Archived Notebook](archive/notebook/)
