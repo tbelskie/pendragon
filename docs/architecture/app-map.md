@@ -175,6 +175,18 @@ In v0.10, Forge adds Launch Surface QA:
 
 This keeps the launch surface honest before a founder shares it.
 
+In v0.11, Forge adds Launch Share Package:
+
+- primary launch post
+- short teaser
+- founder DM
+- clear-first blockers
+- proof links
+- next moves
+- Markdown export
+
+This gives the founder an outbound packet generated from the same room as the launch surface.
+
 The core job:
 
 > Build a launch site from the product room.
