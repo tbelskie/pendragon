@@ -500,8 +500,7 @@ button {
 .empty-state,
 .asset-card,
 .doc-asset,
-.docs-command article,
-.forge-surface {
+.docs-command article {
   background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.018));
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -514,15 +513,13 @@ button {
 }
 
 .brief-hero h2,
-.surface-heading h2,
-.forge-surface h2 {
+.surface-heading h2 {
   font-size: 28px;
   line-height: 1.12;
   margin: 0;
 }
 
-.brief-hero p:not(.eyebrow),
-.forge-surface p {
+.brief-hero p:not(.eyebrow) {
   color: var(--muted);
   margin: 0;
 }
@@ -1005,7 +1002,44 @@ button {
 }
 
 .forge-surface {
+  max-width: 1120px;
+}
+
+.forge-hero,
+.launch-preview {
+  background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.018));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.forge-hero {
+  align-items: center;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) auto;
   padding: 28px;
+}
+
+.forge-hero h2 {
+  font-size: 30px;
+  line-height: 1.1;
+  margin: 8px 0;
+}
+
+.forge-hero p:not(.eyebrow) {
+  color: var(--muted);
+  margin: 0;
+}
+
+.forge-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.forge-readiness {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .forge-readiness article {
@@ -1021,8 +1055,12 @@ button {
   border-color: rgba(255, 92, 30, 0.32);
 }
 
-.forge-readiness span {
+.forge-readiness span,
+.forge-readiness small {
   color: var(--muted);
+}
+
+.forge-readiness span {
   font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
@@ -1030,6 +1068,256 @@ button {
 
 .forge-readiness article.ready span {
   color: var(--ember);
+}
+
+.forge-readiness small {
+  line-height: 1.35;
+}
+
+.launch-preview {
+  display: grid;
+  gap: 18px;
+  overflow: hidden;
+  padding: 0;
+}
+
+.launch-preview__hero {
+  background:
+    radial-gradient(circle at 88% 18%, rgba(255, 92, 30, 0.14), transparent 34%),
+    linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.02));
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  padding: 30px;
+}
+
+.launch-preview__hero h2 {
+  font-size: 42px;
+  line-height: 1;
+  margin: 8px 0;
+}
+
+.launch-preview__hero p:not(.eyebrow) {
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.launch-preview__status {
+  align-self: start;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  display: grid;
+  gap: 5px;
+  padding: 18px;
+}
+
+.launch-preview__status--blocked {
+  border-color: rgba(255, 92, 30, 0.34);
+}
+
+.launch-preview__status--at-risk {
+  border-color: rgba(117, 167, 255, 0.3);
+}
+
+.launch-preview__status--ready {
+  border-color: rgba(91, 207, 132, 0.3);
+}
+
+.launch-preview__status span {
+  color: var(--ember);
+  font-size: 40px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.launch-preview__status strong {
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.launch-preview__status small,
+.preview-section-heading span,
+.ready-list,
+.gap-list p,
+.launch-preview__footer aside p,
+.launch-preview__copy p:not(.eyebrow) {
+  color: var(--muted);
+}
+
+.launch-preview__facts,
+.launch-preview__copy,
+.launch-preview__split,
+.proof-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.launch-preview__facts {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 0 24px;
+}
+
+.launch-preview__facts span,
+.launch-preview__copy section,
+.proof-grid article,
+.gap-list li,
+.launch-preview__footer aside {
+  background: rgba(255,255,255,0.035);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  min-width: 0;
+  padding: 14px;
+}
+
+.launch-preview__facts strong,
+.proof-grid span,
+.gap-list span {
+  color: var(--ember);
+  display: block;
+  font-size: 12px;
+  font-weight: 900;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.launch-preview__copy {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 0 24px;
+}
+
+.launch-preview__copy h3 {
+  font-size: 20px;
+  line-height: 1.25;
+  margin: 8px 0 0;
+}
+
+.launch-preview__copy p {
+  margin: 8px 0 0;
+}
+
+.launch-preview__copy .wide {
+  grid-column: 1 / -1;
+}
+
+.launch-preview__split {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  padding: 0 24px;
+}
+
+.launch-preview__split > section {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.preview-section-heading {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.preview-section-heading span {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 6px 9px;
+}
+
+.proof-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.proof-grid article {
+  display: grid;
+  gap: 8px;
+}
+
+.proof-grid strong {
+  line-height: 1.2;
+}
+
+.proof-grid p,
+.proof-grid a {
+  font-size: 14px;
+  margin: 0;
+}
+
+.proof-grid p {
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.proof-grid a {
+  color: var(--ember);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.proof-grid a:hover {
+  text-decoration: underline;
+}
+
+.ready-list,
+.gap-list {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ready-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ready-list li {
+  background: rgba(91, 207, 132, 0.08);
+  border: 1px solid rgba(91, 207, 132, 0.18);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.gap-list li {
+  align-items: start;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 78px minmax(0, 1fr);
+}
+
+.gap-list strong {
+  color: var(--text);
+}
+
+.gap-list p {
+  line-height: 1.4;
+  margin: 5px 0 0;
+}
+
+.launch-preview__footer {
+  border-top: 1px solid var(--line-soft);
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  padding: 24px;
+}
+
+.launch-preview__footer .actions {
+  margin-top: 10px;
+}
+
+.launch-preview__footer aside {
+  align-self: start;
+  display: grid;
+  gap: 8px;
+}
+
+.launch-preview__footer aside p {
+  margin: 0;
 }
 
 @media (max-width: 980px) {
@@ -1098,6 +1386,14 @@ button {
   .decision-card__body,
   .asset-grid,
   .forge-readiness,
+  .forge-hero,
+  .launch-preview__hero,
+  .launch-preview__facts,
+  .launch-preview__copy,
+  .launch-preview__split,
+  .launch-preview__footer,
+  .proof-grid,
+  .ready-list,
   .docs-command,
   .doc-asset__fields,
   .gate-hero,
@@ -1108,6 +1404,10 @@ button {
 
   .gate-verdict {
     text-align: left;
+  }
+
+  .forge-actions {
+    justify-content: flex-start;
   }
 }
 

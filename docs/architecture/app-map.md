@@ -118,9 +118,17 @@ For Writing Quest, the first gate asks:
 
 ### Forge
 
-Placeholder in v0.1.
+Generates the first external launch surface from the product room.
 
-Future job:
+In v0.6, Forge creates:
+
+- in-app launch surface preview
+- standalone HTML draft export
+- readiness signals for brief, docs, proof, and gate
+- proof links from docs assets when safe external links exist
+- missing-surface prompts based on open docs and unresolved decisions
+
+The core job:
 
 > Build a launch site from the product room.
 
