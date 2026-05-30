@@ -95,6 +95,24 @@ export const workspaceSeed = {
           evidence: "Support/contact decision"
         }
       ],
+      evidenceSources: [
+        {
+          id: "evidence-writing-quest-repo",
+          title: "Writing Quest repo",
+          type: "repo",
+          url: "https://github.com/tbelskie/writing-quest",
+          attachedTo: "forge",
+          note: "Source of truth for the desktop app build and save/export behavior."
+        },
+        {
+          id: "evidence-writing-quest-pendragon-room",
+          title: "Writing Quest launch room",
+          type: "doc",
+          url: "https://github.com/tbelskie/pendragon",
+          attachedTo: "gate",
+          note: "Current planning source for beta readiness, launch docs, and unresolved trust work."
+        }
+      ],
       nextActions: [
         "Finish Mac beta build",
         "Publish local-data promise",

@@ -13,6 +13,7 @@ Pendragon v0.1 should be small enough to build quickly and real enough to dogfoo
 /app/products/:id/brief
 /app/products/:id/decisions
 /app/products/:id/docs
+/app/products/:id/evidence
 /app/products/:id/gate
 /app/products/:id/forge
 /app/products/:id/retro
@@ -94,6 +95,24 @@ Tracks the product's public knowledge surface:
 
 In v0.4, Docs becomes an editable tracker. Each docs asset has status, priority, purpose, next move, proof link, and evidence. Saving the tracker syncs the product's Docs readiness row.
 
+### Evidence
+
+Collects manual evidence links before Pendragon invests in real connectors.
+
+In v0.8, each evidence source has:
+
+- title
+- link
+- type
+- attachment target
+- proof note
+
+Evidence is the connector contract:
+
+> What does this source prove, and where should Pendragon use it?
+
+Forge uses safe evidence links attached to Forge as launch proof.
+
 ### Gate
 
 Synthesizes the product room into a launch readiness verdict.
@@ -151,6 +170,7 @@ Keep the shell minimal:
 - Warroom
 - Decisions
 - Docs
+- Evidence
 - Gate
 - Forge
 

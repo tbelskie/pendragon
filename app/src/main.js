@@ -13,6 +13,7 @@ const views = [
   { id: "brief", label: "Brief" },
   { id: "decisions", label: "Decisions" },
   { id: "docs", label: "Docs" },
+  { id: "evidence", label: "Evidence" },
   { id: "gate", label: "Gate" },
   { id: "forge", label: "Forge" }
 ]
@@ -31,6 +32,29 @@ const docsStatusLabels = {
 }
 
 const docsStatusOrder = ["missing", "drafting", "blocked", "ready"]
+
+const evidenceTypeLabels = {
+  repo: "Repo",
+  doc: "Doc",
+  pricing: "Pricing",
+  analytics: "Analytics",
+  design: "Design",
+  support: "Support",
+  demo: "Demo",
+  waitlist: "Waitlist",
+  store: "Store",
+  other: "Other"
+}
+
+const evidenceAttachLabels = {
+  brief: "Brief",
+  docs: "Docs",
+  gate: "Gate",
+  forge: "Forge"
+}
+
+const evidenceTypeOrder = ["repo", "doc", "pricing", "analytics", "design", "support", "demo", "waitlist", "store", "other"]
+const evidenceAttachOrder = ["brief", "docs", "gate", "forge"]
 
 function activeProduct() {
   return workspace.products.find((product) => product.id === workspace.activeProductId) ?? workspace.products[0]
@@ -79,6 +103,10 @@ function productDocsAssets(product) {
   return Array.isArray(product.docsAssets) ? product.docsAssets : []
 }
 
+function productEvidenceSources(product) {
+  return Array.isArray(product.evidenceSources) ? product.evidenceSources : []
+}
+
 function docsStats(product) {
   const assets = productDocsAssets(product)
   const ready = assets.filter((asset) => asset.status === "ready").length
@@ -89,6 +117,21 @@ function docsStats(product) {
   const percent = assets.length ? Math.round((ready / assets.length) * 100) : 0
 
   return { assets, ready, drafting, blocked, missing, criticalOpen, percent }
+}
+
+function evidenceStats(product) {
+  const sources = productEvidenceSources(product)
+  const safeSources = sources.filter((source) => safeProofLink(source.url))
+  const forgeSources = safeSources.filter((source) => source.attachedTo === "forge")
+  const trustSources = safeSources.filter((source) => /trust|privacy|support|install|save|export|security/i
+    .test(`${source.title} ${source.note} ${source.type}`))
+
+  return {
+    forgeSources,
+    safeSources,
+    sources,
+    trustSources
+  }
 }
 
 function docsPriorityRank(priority) {
@@ -301,6 +344,7 @@ function launchSurfaceModel(product) {
   const nextActions = (product.nextActions ?? []).filter(Boolean)
   const readyAssets = gate.docs.assets.filter((asset) => asset.status === "ready")
   const proofAssets = gate.docs.assets.filter((asset) => safeProofLink(asset.proofLink))
+  const evidence = evidenceStats(product)
   const template = surfaceTemplateForProduct(product)
   const openAssets = gate.docs.assets
     .filter((asset) => asset.status !== "ready")
@@ -323,6 +367,7 @@ function launchSurfaceModel(product) {
 
   return {
     audience: fallbackText(product.user, "Early users who need the clearest possible product promise."),
+    evidence,
     gate,
     launchGaps,
     milestone: fallbackText(brief.primaryMilestone, product.targetDate || "First credible launch milestone."),
@@ -505,6 +550,49 @@ function saveDocsAssets(event) {
     hasUnsavedFormChanges = false
   } catch {
     errorMessage = "Could not save the docs tracker locally. Keep this tab open and try again."
+  }
+
+  render()
+}
+
+function addEvidenceSource(event) {
+  event.preventDefault()
+
+  const product = activeProduct()
+  const form = new FormData(event.currentTarget)
+  const title = String(form.get("title") ?? "").trim()
+  const url = String(form.get("url") ?? "").trim()
+
+  if (!title || !url) {
+    errorMessage = "Evidence title and link are required."
+    render()
+    return
+  }
+
+  if (!safeProofLink(url)) {
+    errorMessage = "Use a full http or https link for evidence."
+    render()
+    return
+  }
+
+  const evidenceSource = {
+    attachedTo: String(form.get("attachedTo") ?? "forge"),
+    id: `evidence-${Date.now()}`,
+    note: String(form.get("note") ?? "").trim(),
+    title,
+    type: String(form.get("type") ?? "doc"),
+    url
+  }
+  const nextProduct = {
+    ...product,
+    evidenceSources: [...productEvidenceSources(product), evidenceSource]
+  }
+
+  try {
+    commitWorkspace(workspaceWithActiveProduct(nextProduct), `Evidence link added at ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`)
+    hasUnsavedFormChanges = false
+  } catch {
+    errorMessage = "Could not save the evidence link locally. Keep this tab open and try again."
   }
 
   render()
@@ -1020,6 +1108,116 @@ function renderDocs(product) {
   `
 }
 
+function renderEvidenceTypeOptions(currentType = "doc") {
+  return evidenceTypeOrder
+    .map((type) => `
+      <option value="${type}" ${type === currentType ? "selected" : ""}>${escapeHtml(evidenceTypeLabels[type] ?? type)}</option>
+    `)
+    .join("")
+}
+
+function renderEvidenceAttachOptions(currentAttach = "forge") {
+  return evidenceAttachOrder
+    .map((attach) => `
+      <option value="${attach}" ${attach === currentAttach ? "selected" : ""}>${escapeHtml(evidenceAttachLabels[attach] ?? attach)}</option>
+    `)
+    .join("")
+}
+
+function renderEvidenceSource(source) {
+  const link = safeProofLink(source.url)
+
+  return `
+    <article class="evidence-card">
+      <div>
+        <span>${escapeHtml(evidenceTypeLabels[source.type] ?? source.type)}</span>
+        <h3>${escapeHtml(source.title)}</h3>
+        <p>${escapeHtml(source.note || "No proof note captured yet.")}</p>
+      </div>
+      <div class="evidence-card__meta">
+        <small>${escapeHtml(evidenceAttachLabels[source.attachedTo] ?? source.attachedTo ?? "Forge")}</small>
+        ${link ? `<a href="${escapeHtml(link)}" rel="noreferrer" target="_blank">Open link</a>` : ""}
+      </div>
+    </article>
+  `
+}
+
+function renderEvidence(product) {
+  const stats = evidenceStats(product)
+
+  return `
+    ${errorMessage ? `<p class="error-message">${escapeHtml(errorMessage)}</p>` : ""}
+    <section class="launch-surface evidence-surface">
+      <div class="surface-heading">
+        <div>
+          <p class="eyebrow">Evidence Inbox</p>
+          <h2>Collect launch proof without integration debt.</h2>
+        </div>
+        <span>${stats.safeSources.length} usable links</span>
+      </div>
+
+      <div class="evidence-command">
+        <article>
+          <strong>${stats.sources.length}</strong>
+          <span>Total links</span>
+        </article>
+        <article>
+          <strong>${stats.forgeSources.length}</strong>
+          <span>Forge proof</span>
+        </article>
+        <article>
+          <strong>${stats.trustSources.length}</strong>
+          <span>Trust signals</span>
+        </article>
+      </div>
+
+      <div class="evidence-grid">
+        <section class="evidence-list">
+          ${stats.sources.length ? stats.sources.map(renderEvidenceSource).join("") : `
+            <article class="empty-state">
+              <p class="eyebrow">No Evidence Yet</p>
+              <h3>Paste the proof before building connectors.</h3>
+            </article>
+          `}
+        </section>
+
+        <form id="evidence-form" class="editor-form evidence-form">
+          <p class="eyebrow">Add Evidence</p>
+          <label for="evidenceTitle">
+            <span>Title</span>
+            <input id="evidenceTitle" name="title" placeholder="GitHub repo, pricing doc, demo video..." />
+          </label>
+          <label for="evidenceUrl">
+            <span>Link</span>
+            <input id="evidenceUrl" name="url" inputmode="url" placeholder="https://..." />
+          </label>
+          <div class="evidence-form__row">
+            <label for="evidenceType">
+              <span>Type</span>
+              <select id="evidenceType" name="type">
+                ${renderEvidenceTypeOptions()}
+              </select>
+            </label>
+            <label for="evidenceAttach">
+              <span>Attach to</span>
+              <select id="evidenceAttach" name="attachedTo">
+                ${renderEvidenceAttachOptions()}
+              </select>
+            </label>
+          </div>
+          <label for="evidenceNote">
+            <span>What this proves</span>
+            <textarea id="evidenceNote" name="note" rows="4" placeholder="Why should this source influence the launch surface?"></textarea>
+          </label>
+          <div class="form-actions">
+            <button class="primary-button" type="submit">Add link</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  `
+}
+
 function renderGateCriterion(criterion) {
   return `
     <article class="gate-criterion gate-criterion--${escapeHtml(criterion.status)}">
@@ -1149,6 +1347,19 @@ function renderProofAsset(asset) {
   `
 }
 
+function renderEvidenceProof(source) {
+  const proofLink = safeProofLink(source.url)
+
+  return `
+    <article>
+      <span>${escapeHtml(evidenceTypeLabels[source.type] ?? source.type)}</span>
+      <strong>${escapeHtml(source.title)}</strong>
+      <p>${escapeHtml(source.note || "Evidence link attached to the launch room.")}</p>
+      ${proofLink ? `<a href="${escapeHtml(proofLink)}" rel="noreferrer" target="_blank">Open evidence</a>` : ""}
+    </article>
+  `
+}
+
 function renderTrustAsset(asset) {
   const proofLink = safeProofLink(asset.proofLink)
 
@@ -1197,13 +1408,17 @@ function renderForgeStrategy(surface) {
 
 function renderLaunchSurfacePreview(product) {
   const surface = launchSurfaceModel(product)
-  const proofAssets = surface.proofAssets.length
-    ? surface.proofAssets.map(renderProofAsset).join("")
+  const proofItems = [
+    ...surface.evidence.forgeSources.map(renderEvidenceProof),
+    ...surface.proofAssets.map(renderProofAsset)
+  ]
+  const proofAssets = proofItems.length
+    ? proofItems.join("")
     : `
       <article>
         <span>Proof</span>
-        <strong>No proof links attached yet.</strong>
-        <p>Add proof links in Docs when a source exists in GitHub, Google Docs, or another public draft.</p>
+        <strong>No Forge proof links attached yet.</strong>
+        <p>Add evidence links or docs proof links when a source exists in GitHub, Google Docs, or another public draft.</p>
       </article>
     `
   const readyAssets = surface.readyAssets.length
@@ -1361,8 +1576,15 @@ function renderLaunchSurfacePreview(product) {
 function buildLaunchSurfaceHtml(product) {
   const surface = launchSurfaceModel(product)
   const generatedAt = new Date().toLocaleDateString([], { month: "long", day: "numeric", year: "numeric" })
-  const proofItems = surface.proofAssets.length
-    ? surface.proofAssets.map((asset) => {
+  const evidenceProofItems = surface.evidence.forgeSources.map((source) => `
+        <article class="card">
+          <span>${escapeHtml(evidenceTypeLabels[source.type] ?? source.type)}</span>
+          <h3>${escapeHtml(source.title)}</h3>
+          <p>${escapeHtml(source.note || "Evidence link attached to the launch room.")}</p>
+          <a href="${escapeHtml(safeProofLink(source.url))}" rel="noreferrer" target="_blank">Open evidence</a>
+        </article>
+      `)
+  const docsProofItems = surface.proofAssets.map((asset) => {
       const proofLink = safeProofLink(asset.proofLink)
 
       return `
@@ -1373,12 +1595,14 @@ function buildLaunchSurfaceHtml(product) {
           ${proofLink ? `<a href="${escapeHtml(proofLink)}" rel="noreferrer" target="_blank">Open proof</a>` : ""}
         </article>
       `
-    }).join("")
+    })
+  const proofItems = [...evidenceProofItems, ...docsProofItems].length
+    ? [...evidenceProofItems, ...docsProofItems].join("")
     : `
       <article class="card">
         <span>Proof</span>
-        <h3>No proof links attached yet.</h3>
-        <p>Add proof links in Pendragon Docs before publishing this surface.</p>
+        <h3>No Forge proof links attached yet.</h3>
+        <p>Add evidence links or docs proof links before publishing this surface.</p>
       </article>
     `
   const gapItems = surface.launchGaps.length
@@ -1736,6 +1960,7 @@ function buildLaunchSurfaceHtml(product) {
 function renderForge(product) {
   const brief = product.brief ?? {}
   const surface = launchSurfaceModel(product)
+  const proofCount = surface.proofAssets.length + surface.evidence.forgeSources.length
   const readySignals = [
     {
       detail: "One-liner and promise",
@@ -1750,10 +1975,10 @@ function renderForge(product) {
       status: surface.gate.docs.ready > 0 ? "Ready" : "Missing"
     },
     {
-      detail: `${surface.proofAssets.length} external proof link${surface.proofAssets.length === 1 ? "" : "s"}`,
+      detail: `${proofCount} external proof link${proofCount === 1 ? "" : "s"}`,
       label: "Proof",
-      ready: surface.proofAssets.length > 0,
-      status: surface.proofAssets.length > 0 ? "Attached" : "Missing"
+      ready: proofCount > 0,
+      status: proofCount > 0 ? "Attached" : "Missing"
     },
     {
       detail: surface.gate.summary,
@@ -1793,6 +2018,7 @@ function renderActiveView(product) {
   if (activeView === "brief") return renderBrief(product)
   if (activeView === "decisions") return renderDecisions(product)
   if (activeView === "docs") return renderDocs(product)
+  if (activeView === "evidence") return renderEvidence(product)
   if (activeView === "gate") return renderGate(product)
   if (activeView === "forge") return renderForge(product)
   return renderWarroom(product)
@@ -1817,6 +2043,7 @@ function bindEvents() {
   document.querySelector("#brief-form")?.addEventListener("submit", saveBrief)
   document.querySelector("#decision-form")?.addEventListener("submit", addDecision)
   document.querySelector("#docs-form")?.addEventListener("submit", saveDocsAssets)
+  document.querySelector("#evidence-form")?.addEventListener("submit", addEvidenceSource)
   document.querySelectorAll("form").forEach((form) => {
     const markDirty = () => {
       hasUnsavedFormChanges = true

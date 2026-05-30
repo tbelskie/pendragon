@@ -30,6 +30,16 @@ function mergeProduct(seedProduct, storedProduct = {}) {
     ).map((asset) => ({
       proofLink: "",
       ...asset
+    })),
+    evidenceSources: mergeItemsById(
+      structuredClone(seedProduct.evidenceSources ?? []),
+      Array.isArray(storedProduct.evidenceSources) ? storedProduct.evidenceSources : []
+    ).map((source) => ({
+      attachedTo: "forge",
+      note: "",
+      type: "doc",
+      url: "",
+      ...source
     }))
   }
 }
