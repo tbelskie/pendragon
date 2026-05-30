@@ -38,6 +38,7 @@ Each product gets a launch room, docs plan, pricing hypothesis, decision ledger,
 - [v0.14 Product Setup And Stage Engine Plan](docs/product/v0.14-product-setup-stage-engine-plan.md)
 - [v0.15 Create Product Flow Plan](docs/product/v0.15-create-product-flow-plan.md)
 - [v0.16 Portfolio Command Center Plan](docs/product/v0.16-portfolio-command-center-plan.md)
+- [v0.17 Clear First Command Queue Plan](docs/product/v0.17-clear-first-command-queue-plan.md)
 - [Pendragon As Meta-Product](docs/product/pendragon-meta-product.md)
 - [Editable Warroom Mockups](docs/design/editable-warroom-mockups.md)
 - [Docs Tracker Mockups](docs/design/docs-tracker-mockups.md)
@@ -53,4 +54,5 @@ Each product gets a launch room, docs plan, pricing hypothesis, decision ledger,
 - [Product Setup And Stage Engine](docs/design/product-setup-stage-engine.md)
 - [Create Product Flow](docs/design/create-product-flow.md)
 - [Portfolio Command Center](docs/design/portfolio-command-center.md)
+- [Clear First Command Queue](docs/design/clear-first-command-queue.md)
 - [Archived Notebook](archive/notebook/)

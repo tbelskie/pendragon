@@ -874,6 +874,132 @@ function portfolioReason({ docs, engine, gate, proofCount }) {
   return gate.nextMoves[0] ?? engine.nextActions[0] ?? "Keep the room current and choose the next experiment."
 }
 
+function portfolioClearFirstItems({ docs, engine, gate, product, proofCount, surface }) {
+  const items = []
+  const savedStage = stageLabels[engine.savedStage] ?? engine.savedStage
+  const inferredStage = stageLabels[engine.inferredStage] ?? engine.inferredStage
+  const criticalAsset = docs.assets
+    .filter((asset) => asset.priority === "Critical" && asset.status !== "ready")
+    .sort((left, right) => docsPriorityRank(left.priority) - docsPriorityRank(right.priority))[0]
+  const unresolved = gate.unresolved[0]
+  const stageGap = engine.missingAssets[0]
+  const gateRisk = gate.risks[0]
+
+  if (engine.stageChanged) {
+    items.push({
+      category: "Setup",
+      detail: `Signals point to ${inferredStage}, but the room is saved as ${savedStage}.`,
+      level: "urgent",
+      rank: 115,
+      route: "setup",
+      title: "Resolve stage mismatch"
+    })
+  }
+
+  gate.blockers.slice(0, 2).forEach((blocker, index) => {
+    items.push({
+      category: "Gate",
+      detail: blocker.next || blocker.detail,
+      level: "urgent",
+      rank: 105 - index,
+      route: "gate",
+      title: blocker.title
+    })
+  })
+
+  if (criticalAsset) {
+    items.push({
+      category: "Docs",
+      detail: `${criticalAsset.title}: ${criticalAsset.nextStep}`,
+      level: "urgent",
+      rank: 98,
+      route: "docs",
+      title: "Finish critical docs"
+    })
+  }
+
+  surface.qa.blockers.slice(0, 2).forEach((blocker, index) => {
+    items.push({
+      category: "Forge",
+      detail: blocker.detail,
+      level: surface.qa.level === "blocked" ? "urgent" : "focus",
+      rank: 90 - index,
+      route: "forge",
+      title: `${blocker.label} blocks sharing`
+    })
+  })
+
+  if (!proofCount) {
+    items.push({
+      category: "Evidence",
+      detail: "Attach at least one proof link before pushing a launch surface wider.",
+      level: "focus",
+      rank: 82,
+      route: "evidence",
+      title: "Attach launch proof"
+    })
+  }
+
+  if (unresolved) {
+    items.push({
+      category: "Decisions",
+      detail: unresolved.title,
+      level: "focus",
+      rank: 76,
+      route: "decisions",
+      title: "Choose a path"
+    })
+  }
+
+  if (stageGap) {
+    items.push({
+      category: "Setup",
+      detail: stageGap.next,
+      level: "focus",
+      rank: 68,
+      route: "setup",
+      title: stageGap.label
+    })
+  }
+
+  if (gateRisk) {
+    items.push({
+      category: "Gate",
+      detail: gateRisk.next || gateRisk.detail,
+      level: "steady",
+      rank: 58,
+      route: "gate",
+      title: gateRisk.title
+    })
+  }
+
+  if (!items.length) {
+    items.push({
+      category: "Warroom",
+      detail: (product.nextActions ?? []).find(Boolean) ?? "Choose the next product move.",
+      level: "steady",
+      rank: 30,
+      route: "warroom",
+      title: "Keep momentum"
+    })
+  }
+
+  return items
+}
+
+function portfolioClearFirstQueue(models) {
+  return models
+    .flatMap((item) => item.clearFirst.map((move, index) => ({
+      ...move,
+      id: `${item.product.id}-${move.route}-${index}`,
+      product: item.product,
+      productRiskScore: item.riskScore,
+      queueScore: move.rank + Math.round(item.riskScore * 0.25) - index
+    })))
+    .sort((left, right) => right.queueScore - left.queueScore)
+    .slice(0, 6)
+}
+
 function portfolioProductModel(product) {
   const docs = docsStats(product)
   const evidence = evidenceStats(product)
@@ -881,6 +1007,7 @@ function portfolioProductModel(product) {
   const engine = stageEngineResult(product)
   const readiness = readinessPercent(product)
   const proofCount = proofCountForProduct(product, evidence)
+  const surface = launchSurfaceModel(product)
   const riskScore = Math.min(100, Math.round(
     ((100 - readiness) * 0.22)
     + (gate.level === "blocked" ? 30 : gate.level === "at-risk" ? 18 : 4)
@@ -889,13 +1016,17 @@ function portfolioProductModel(product) {
     + (engine.missingAssets.length * 5)
     + (proofCount ? 0 : 8)
     + (engine.stageChanged ? 12 : 0)
+    + (surface.qa.level === "blocked" ? 12 : surface.qa.level === "at-risk" ? 6 : 0)
+    + (surface.qa.blockers.length * 3)
   ))
   const nextMove = gate.nextMoves[0]
     ?? engine.nextActions[0]
     ?? (product.nextActions ?? []).find(Boolean)
     ?? "Choose the next product move."
+  const clearFirst = portfolioClearFirstItems({ docs, engine, gate, product, proofCount, surface })
 
   return {
+    clearFirst,
     docs,
     engine,
     evidence,
@@ -919,10 +1050,13 @@ function portfolioSummary(models) {
   const averageReadiness = models.length
     ? Math.round(models.reduce((total, item) => total + item.readiness, 0) / models.length)
     : 0
+  const clearFirst = portfolioClearFirstQueue(models)
 
   return {
     averageReadiness,
     blocked: models.filter((item) => item.gate.level === "blocked").length,
+    clearFirst,
+    clearFirstCount: models.reduce((total, item) => total + item.clearFirst.length, 0),
     products: models.length,
     recommended: models[0],
     stageMismatches: models.filter((item) => item.engine.stageChanged).length,
@@ -1742,10 +1876,68 @@ function portfolioScoreLevel(score) {
   return "steady"
 }
 
+function renderPortfolioClearFirstItem(item, index) {
+  const priority = index === 0 ? "Start here" : item.level === "urgent" ? "Unblock" : "Queue"
+  const buttonClass = index === 0 ? "primary-button" : "quiet-button"
+
+  return `
+    <article class="portfolio-clear-item portfolio-clear-item--${escapeHtml(item.level)}">
+      <div class="portfolio-clear-item__rank">
+        <span>${index + 1}</span>
+        <small>${escapeHtml(priority)}</small>
+      </div>
+      <div class="portfolio-clear-item__body">
+        <span>${escapeHtml(item.category)} / ${escapeHtml(item.product.name)}</span>
+        <h3>${escapeHtml(item.title)}</h3>
+        <p>${escapeHtml(item.detail)}</p>
+      </div>
+      <aside>
+        <strong>${item.productRiskScore}</strong>
+        <small>attention</small>
+        <button class="${buttonClass}" type="button" data-open-product="${escapeHtml(item.product.id)}" data-open-view="${escapeHtml(item.route)}">
+          Open ${escapeHtml(item.category)}
+        </button>
+      </aside>
+    </article>
+  `
+}
+
+function renderPortfolioClearFirst(queue) {
+  if (!queue.length) {
+    return `
+      <section class="portfolio-clear-first">
+        <div class="surface-heading">
+          <div>
+            <p class="eyebrow">Clear First</p>
+            <h2>No blockers surfaced.</h2>
+          </div>
+        </div>
+      </section>
+    `
+  }
+
+  return `
+    <section class="portfolio-clear-first">
+      <div class="portfolio-clear-first__header">
+        <div>
+          <p class="eyebrow">Clear First</p>
+          <h2>Unblock the portfolio before adding more work.</h2>
+          <p>These are the highest-leverage moves Pendragon sees across product rooms right now.</p>
+        </div>
+        <span>${queue.length} moves queued</span>
+      </div>
+      <div class="portfolio-clear-first__list">
+        ${queue.map(renderPortfolioClearFirstItem).join("")}
+      </div>
+    </section>
+  `
+}
+
 function renderPortfolioCard(item, index) {
   const level = portfolioScoreLevel(item.riskScore)
   const stageLabel = stageLabels[item.product.stage] ?? item.product.stage
   const inferredLabel = stageLabels[item.engine.inferredStage] ?? item.engine.inferredStage
+  const topClearFirst = item.clearFirst[0]
   const mismatch = item.engine.stageChanged
     ? `<span class="portfolio-card__alert">Signals: ${escapeHtml(inferredLabel)}</span>`
     : ""
@@ -1772,7 +1964,7 @@ function renderPortfolioCard(item, index) {
       <div class="portfolio-card__body">
         <p>${escapeHtml(item.reason)}</p>
         ${mismatch}
-        <small>${escapeHtml(item.nextMove)}</small>
+        <small>${topClearFirst ? `Clear first: ${escapeHtml(topClearFirst.title)}` : escapeHtml(item.nextMove)}</small>
       </div>
       <footer class="portfolio-card__actions">
         <button class="quiet-button" type="button" data-open-product="${escapeHtml(item.product.id)}" data-open-view="warroom">Warroom</button>
@@ -1818,10 +2010,13 @@ function renderPortfolio() {
       <div class="portfolio-metrics">
         ${renderPortfolioMetric("Products", summary.products, "Rooms tracked")}
         ${renderPortfolioMetric("Avg readiness", `${summary.averageReadiness}%`, "Portfolio pulse")}
+        ${renderPortfolioMetric("Clear first", summary.clearFirstCount, "Moves detected")}
         ${renderPortfolioMetric("Blocked gates", summary.blocked, "Need clearing")}
         ${renderPortfolioMetric("Stage mismatches", summary.stageMismatches, "Signals disagree")}
         ${renderPortfolioMetric("With proof", `${summary.withProof}/${summary.products}`, "Evidence attached")}
       </div>
+
+      ${renderPortfolioClearFirst(summary.clearFirst)}
 
       <div class="portfolio-grid">
         ${models.map(renderPortfolioCard).join("")}

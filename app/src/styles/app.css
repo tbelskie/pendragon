@@ -751,10 +751,12 @@ button {
 .portfolio-metrics {
   display: grid;
   gap: 12px;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
 .portfolio-metrics article,
+.portfolio-clear-first,
+.portfolio-clear-item,
 .portfolio-card {
   background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.018));
   border: 1px solid var(--line);
@@ -782,6 +784,129 @@ button {
 .portfolio-metrics small {
   color: var(--muted);
   line-height: 1.3;
+}
+
+.portfolio-clear-first {
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+}
+
+.portfolio-clear-first__header {
+  align-items: start;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.portfolio-clear-first__header h2 {
+  font-size: 28px;
+  line-height: 1.1;
+  margin: 8px 0;
+}
+
+.portfolio-clear-first__header p:not(.eyebrow) {
+  color: var(--muted);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.portfolio-clear-first__header > span {
+  background: rgba(255, 92, 30, 0.12);
+  border: 1px solid rgba(255, 92, 30, 0.24);
+  border-radius: 999px;
+  color: var(--ember);
+  font-size: 12px;
+  font-weight: 900;
+  padding: 7px 10px;
+  text-transform: uppercase;
+}
+
+.portfolio-clear-first__list {
+  display: grid;
+  gap: 10px;
+}
+
+.portfolio-clear-item {
+  align-items: center;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 86px minmax(0, 1fr) 154px;
+  padding: 14px;
+}
+
+.portfolio-clear-item--urgent {
+  border-color: rgba(255, 92, 30, 0.34);
+}
+
+.portfolio-clear-item--focus {
+  border-color: rgba(117, 167, 255, 0.28);
+}
+
+.portfolio-clear-item--steady {
+  border-color: rgba(91, 207, 132, 0.24);
+}
+
+.portfolio-clear-item__rank,
+.portfolio-clear-item aside {
+  background: rgba(255,255,255,0.032);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+}
+
+.portfolio-clear-item__rank span {
+  color: var(--ember);
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.portfolio-clear-item__rank small,
+.portfolio-clear-item aside small,
+.portfolio-clear-item__body p {
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.portfolio-clear-item__body {
+  display: grid;
+  gap: 6px;
+}
+
+.portfolio-clear-item__body span {
+  color: var(--ember);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.portfolio-clear-item__body h3 {
+  font-size: 21px;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.portfolio-clear-item__body p {
+  margin: 0;
+}
+
+.portfolio-clear-item aside {
+  align-items: stretch;
+  text-align: right;
+}
+
+.portfolio-clear-item aside strong {
+  color: var(--ember);
+  font-size: 25px;
+  line-height: 1;
+}
+
+.portfolio-clear-item aside button {
+  margin-top: 6px;
 }
 
 .portfolio-grid {
@@ -2585,6 +2710,8 @@ button {
   .brief-facts,
   .portfolio-hero,
   .portfolio-metrics,
+  .portfolio-clear-first__header,
+  .portfolio-clear-item,
   .portfolio-grid,
   .setup-hero,
   .setup-diagnosis,
@@ -2634,7 +2761,7 @@ button {
   }
 
   .portfolio-metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .forge-actions {
@@ -2734,11 +2861,14 @@ button {
 
   .portfolio-card__header,
   .portfolio-metrics,
+  .portfolio-clear-first__header,
+  .portfolio-clear-item,
   .portfolio-card__stats {
     grid-template-columns: 1fr;
   }
 
-  .portfolio-card__header aside {
+  .portfolio-card__header aside,
+  .portfolio-clear-item aside {
     text-align: left;
   }
 }
