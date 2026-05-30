@@ -13,6 +13,7 @@ Pendragon v0.1 should be small enough to build quickly and real enough to dogfoo
 /app/products/:id/brief
 /app/products/:id/decisions
 /app/products/:id/docs
+/app/products/:id/gate
 /app/products/:id/forge
 /app/products/:id/retro
 ```
@@ -93,6 +94,28 @@ Tracks the product's public knowledge surface:
 
 In v0.4, Docs becomes an editable tracker. Each docs asset has status, priority, purpose, next move, and evidence. Saving the tracker syncs the product's Docs readiness row.
 
+### Gate
+
+Synthesizes the product room into a launch readiness verdict.
+
+Inputs:
+
+- readiness rows
+- docs assets
+- decision ledger
+- support path
+
+Outputs:
+
+- blocked, at-risk, or ready verdict
+- gate score
+- criteria status
+- next moves
+
+For Writing Quest, the first gate asks:
+
+> Can this product credibly enter paid beta yet?
+
 ### Forge
 
 Placeholder in v0.1.
@@ -113,6 +136,7 @@ Keep the shell minimal:
 - Warroom
 - Decisions
 - Docs
+- Gate
 - Forge
 
 Do not add a broad settings area until persistence/import/export requires it.
