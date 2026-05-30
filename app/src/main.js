@@ -147,6 +147,18 @@ function productLaunchSnapshots(product) {
   return Array.isArray(product.launchSnapshots) ? product.launchSnapshots : []
 }
 
+function productClearFirstStates(product) {
+  return Array.isArray(product.clearFirstStates) ? product.clearFirstStates : []
+}
+
+function clearFirstStateFor(product, key) {
+  return productClearFirstStates(product).find((item) => item.key === key) ?? {
+    key,
+    note: "",
+    status: "open"
+  }
+}
+
 function docsStats(product) {
   const assets = productDocsAssets(product)
   const ready = assets.filter((asset) => asset.status === "ready").length
@@ -874,6 +886,13 @@ function portfolioReason({ docs, engine, gate, proofCount }) {
   return gate.nextMoves[0] ?? engine.nextActions[0] ?? "Keep the room current and choose the next experiment."
 }
 
+function clearFirstItem(product, item) {
+  return {
+    ...item,
+    state: clearFirstStateFor(product, item.key)
+  }
+}
+
 function portfolioClearFirstItems({ docs, engine, gate, product, proofCount, surface }) {
   const items = []
   const savedStage = stageLabels[engine.savedStage] ?? engine.savedStage
@@ -889,6 +908,7 @@ function portfolioClearFirstItems({ docs, engine, gate, product, proofCount, sur
     items.push({
       category: "Setup",
       detail: `Signals point to ${inferredStage}, but the room is saved as ${savedStage}.`,
+      key: "setup-stage-mismatch",
       level: "urgent",
       rank: 115,
       route: "setup",
@@ -900,6 +920,7 @@ function portfolioClearFirstItems({ docs, engine, gate, product, proofCount, sur
     items.push({
       category: "Gate",
       detail: blocker.next || blocker.detail,
+      key: `gate-blocker-${slugifyFilename(blocker.title)}`,
       level: "urgent",
       rank: 105 - index,
       route: "gate",
@@ -911,6 +932,7 @@ function portfolioClearFirstItems({ docs, engine, gate, product, proofCount, sur
     items.push({
       category: "Docs",
       detail: `${criticalAsset.title}: ${criticalAsset.nextStep}`,
+      key: `docs-critical-${criticalAsset.id}`,
       level: "urgent",
       rank: 98,
       route: "docs",
@@ -922,6 +944,7 @@ function portfolioClearFirstItems({ docs, engine, gate, product, proofCount, sur
     items.push({
       category: "Forge",
       detail: blocker.detail,
+      key: `forge-qa-${slugifyFilename(blocker.label)}`,
       level: surface.qa.level === "blocked" ? "urgent" : "focus",
       rank: 90 - index,
       route: "forge",
@@ -933,6 +956,7 @@ function portfolioClearFirstItems({ docs, engine, gate, product, proofCount, sur
     items.push({
       category: "Evidence",
       detail: "Attach at least one proof link before pushing a launch surface wider.",
+      key: "evidence-proof-gap",
       level: "focus",
       rank: 82,
       route: "evidence",
@@ -944,6 +968,7 @@ function portfolioClearFirstItems({ docs, engine, gate, product, proofCount, sur
     items.push({
       category: "Decisions",
       detail: unresolved.title,
+      key: `decision-${unresolved.id}`,
       level: "focus",
       rank: 76,
       route: "decisions",
@@ -955,6 +980,7 @@ function portfolioClearFirstItems({ docs, engine, gate, product, proofCount, sur
     items.push({
       category: "Setup",
       detail: stageGap.next,
+      key: `setup-gap-${slugifyFilename(stageGap.label)}`,
       level: "focus",
       rank: 68,
       route: "setup",
@@ -966,6 +992,7 @@ function portfolioClearFirstItems({ docs, engine, gate, product, proofCount, sur
     items.push({
       category: "Gate",
       detail: gateRisk.next || gateRisk.detail,
+      key: `gate-risk-${slugifyFilename(gateRisk.title)}`,
       level: "steady",
       rank: 58,
       route: "gate",
@@ -977,6 +1004,7 @@ function portfolioClearFirstItems({ docs, engine, gate, product, proofCount, sur
     items.push({
       category: "Warroom",
       detail: (product.nextActions ?? []).find(Boolean) ?? "Choose the next product move.",
+      key: "warroom-momentum",
       level: "steady",
       rank: 30,
       route: "warroom",
@@ -984,14 +1012,14 @@ function portfolioClearFirstItems({ docs, engine, gate, product, proofCount, sur
     })
   }
 
-  return items
+  return items.map((item) => clearFirstItem(product, item))
 }
 
-function portfolioClearFirstQueue(models) {
+function portfolioClearFirstQueue(models, status = "open") {
   return models
-    .flatMap((item) => item.clearFirst.map((move, index) => ({
+    .flatMap((item) => item.clearFirst.filter((move) => move.state.status === status).map((move, index) => ({
       ...move,
-      id: `${item.product.id}-${move.route}-${index}`,
+      id: `${item.product.id}-${move.key}`,
       product: item.product,
       productRiskScore: item.riskScore,
       queueScore: move.rank + Math.round(item.riskScore * 0.25) - index
@@ -1024,6 +1052,7 @@ function portfolioProductModel(product) {
     ?? (product.nextActions ?? []).find(Boolean)
     ?? "Choose the next product move."
   const clearFirst = portfolioClearFirstItems({ docs, engine, gate, product, proofCount, surface })
+  const openClearFirst = clearFirst.filter((item) => item.state.status === "open")
 
   return {
     clearFirst,
@@ -1032,6 +1061,7 @@ function portfolioProductModel(product) {
     evidence,
     gate,
     nextMove,
+    openClearFirst,
     product,
     proofCount,
     readiness,
@@ -1051,14 +1081,21 @@ function portfolioSummary(models) {
     ? Math.round(models.reduce((total, item) => total + item.readiness, 0) / models.length)
     : 0
   const clearFirst = portfolioClearFirstQueue(models)
+  const handledClearFirst = portfolioClearFirstQueue(models, "resolved").slice(0, 4)
+  const openClearFirstCount = models.reduce((total, item) => total + item.openClearFirst.length, 0)
+  const resolvedClearFirstCount = models.reduce((total, item) => (
+    total + item.clearFirst.filter((move) => move.state.status === "resolved").length
+  ), 0)
 
   return {
     averageReadiness,
     blocked: models.filter((item) => item.gate.level === "blocked").length,
     clearFirst,
-    clearFirstCount: models.reduce((total, item) => total + item.clearFirst.length, 0),
+    clearFirstCount: openClearFirstCount,
+    handledClearFirst,
     products: models.length,
     recommended: models[0],
+    resolvedClearFirstCount,
     stageMismatches: models.filter((item) => item.engine.stageChanged).length,
     withProof: models.filter((item) => item.proofCount > 0).length
   }
@@ -1588,6 +1625,76 @@ function saveLaunchSurfaceSnapshot() {
   render()
 }
 
+function updateClearFirstState(productId, key, patch, nextStatus) {
+  const product = workspace.products.find((item) => item.id === productId)
+  if (!product || !key) return
+
+  const states = productClearFirstStates(product)
+  const existing = states.find((item) => item.key === key) ?? { key, note: "", status: "open" }
+  const nextState = {
+    ...existing,
+    ...patch,
+    key,
+    updatedAt: new Date().toISOString()
+  }
+  const nextStates = states.some((item) => item.key === key)
+    ? states.map((item) => item.key === key ? nextState : item)
+    : [...states, nextState]
+  const nextProduct = {
+    ...product,
+    clearFirstStates: nextStates
+  }
+  const nextWorkspace = {
+    ...workspace,
+    products: workspace.products.map((item) => item.id === product.id ? nextProduct : item)
+  }
+
+  commitWorkspace(nextWorkspace, nextStatus)
+  hasUnsavedFormChanges = false
+  render()
+}
+
+function saveClearFirstForm(form) {
+  const note = String(new FormData(form).get("note") ?? "").trim()
+  updateClearFirstState(
+    form.dataset.productId,
+    form.dataset.clearKey,
+    { note, status: form.dataset.clearStatus || "open" },
+    `Clear First note saved at ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
+  )
+}
+
+function saveClearFirstNote(event) {
+  event.preventDefault()
+  saveClearFirstForm(event.currentTarget)
+}
+
+function saveClearFirstNoteButton(button) {
+  const form = button.closest("[data-clear-first-form]")
+  if (form) saveClearFirstForm(form)
+}
+
+function resolveClearFirstItem(button) {
+  const form = button.closest("[data-clear-first-form]")
+  const note = form ? String(new FormData(form).get("note") ?? "").trim() : ""
+
+  updateClearFirstState(
+    button.dataset.productId,
+    button.dataset.clearKey,
+    { note, resolvedAt: new Date().toISOString(), status: "resolved" },
+    "Clear First item marked resolved"
+  )
+}
+
+function reopenClearFirstItem(button) {
+  updateClearFirstState(
+    button.dataset.productId,
+    button.dataset.clearKey,
+    { resolvedAt: "", status: "open" },
+    "Clear First item reopened"
+  )
+}
+
 function cancelEdit() {
   isEditing = false
   hasUnsavedFormChanges = false
@@ -1876,15 +1983,38 @@ function portfolioScoreLevel(score) {
   return "steady"
 }
 
-function renderPortfolioClearFirstItem(item, index) {
-  const priority = index === 0 ? "Start here" : item.level === "urgent" ? "Unblock" : "Queue"
-  const buttonClass = index === 0 ? "primary-button" : "quiet-button"
+function renderClearFirstEditor(item, mode = "open") {
+  const resolved = mode === "resolved"
+  const note = item.state.note ?? ""
+  const action = resolved
+    ? `<button class="quiet-button" type="button" data-clear-first-reopen data-product-id="${escapeHtml(item.product.id)}" data-clear-key="${escapeHtml(item.key)}">Reopen</button>`
+    : `<button class="quiet-button" type="button" data-clear-first-resolve data-product-id="${escapeHtml(item.product.id)}" data-clear-key="${escapeHtml(item.key)}">Mark resolved</button>`
 
   return `
-    <article class="portfolio-clear-item portfolio-clear-item--${escapeHtml(item.level)}">
+    <form class="portfolio-clear-item__editor" data-clear-first-form data-clear-status="${escapeHtml(item.state.status)}" data-product-id="${escapeHtml(item.product.id)}" data-clear-key="${escapeHtml(item.key)}">
+      <label>
+        <span>Founder note</span>
+        <input name="note" value="${escapeHtml(note)}" placeholder="Add context, proof, or why this is handled." />
+      </label>
+      <div>
+        <button class="quiet-button" type="button" data-clear-first-save>Save note</button>
+        ${action}
+      </div>
+    </form>
+  `
+}
+
+function renderPortfolioClearFirstItem(item, index, mode = "open") {
+  const resolved = mode === "resolved"
+  const priority = index === 0 ? "Start here" : item.level === "urgent" ? "Unblock" : "Queue"
+  const buttonClass = index === 0 && !resolved ? "primary-button" : "quiet-button"
+  const statusLabel = resolved ? "Resolved" : priority
+
+  return `
+    <article class="portfolio-clear-item portfolio-clear-item--${escapeHtml(item.level)}${resolved ? " portfolio-clear-item--resolved" : ""}">
       <div class="portfolio-clear-item__rank">
         <span>${index + 1}</span>
-        <small>${escapeHtml(priority)}</small>
+        <small>${escapeHtml(statusLabel)}</small>
       </div>
       <div class="portfolio-clear-item__body">
         <span>${escapeHtml(item.category)} / ${escapeHtml(item.product.name)}</span>
@@ -1898,20 +2028,35 @@ function renderPortfolioClearFirstItem(item, index) {
           Open ${escapeHtml(item.category)}
         </button>
       </aside>
+      ${renderClearFirstEditor(item, mode)}
     </article>
   `
 }
 
-function renderPortfolioClearFirst(queue) {
-  if (!queue.length) {
+function renderPortfolioHandledItems(queue) {
+  if (!queue.length) return ""
+
+  return `
+    <details class="portfolio-clear-handled">
+      <summary>Recently resolved (${queue.length})</summary>
+      <div class="portfolio-clear-first__list">
+        ${queue.map((item, index) => renderPortfolioClearFirstItem(item, index, "resolved")).join("")}
+      </div>
+    </details>
+  `
+}
+
+function renderPortfolioClearFirst(summary) {
+  if (!summary.clearFirst.length) {
     return `
       <section class="portfolio-clear-first">
         <div class="surface-heading">
           <div>
             <p class="eyebrow">Clear First</p>
-            <h2>No blockers surfaced.</h2>
+            <h2>No open command moves.</h2>
           </div>
         </div>
+        ${renderPortfolioHandledItems(summary.handledClearFirst)}
       </section>
     `
   }
@@ -1924,11 +2069,12 @@ function renderPortfolioClearFirst(queue) {
           <h2>Unblock the portfolio before adding more work.</h2>
           <p>These are the highest-leverage moves Pendragon sees across product rooms right now.</p>
         </div>
-        <span>${queue.length} moves queued</span>
+        <span>${summary.clearFirst.length} open / ${summary.resolvedClearFirstCount} resolved</span>
       </div>
       <div class="portfolio-clear-first__list">
-        ${queue.map(renderPortfolioClearFirstItem).join("")}
+        ${summary.clearFirst.map((item, index) => renderPortfolioClearFirstItem(item, index)).join("")}
       </div>
+      ${renderPortfolioHandledItems(summary.handledClearFirst)}
     </section>
   `
 }
@@ -1937,7 +2083,7 @@ function renderPortfolioCard(item, index) {
   const level = portfolioScoreLevel(item.riskScore)
   const stageLabel = stageLabels[item.product.stage] ?? item.product.stage
   const inferredLabel = stageLabels[item.engine.inferredStage] ?? item.engine.inferredStage
-  const topClearFirst = item.clearFirst[0]
+  const topClearFirst = item.openClearFirst[0]
   const mismatch = item.engine.stageChanged
     ? `<span class="portfolio-card__alert">Signals: ${escapeHtml(inferredLabel)}</span>`
     : ""
@@ -2016,7 +2162,7 @@ function renderPortfolio() {
         ${renderPortfolioMetric("With proof", `${summary.withProof}/${summary.products}`, "Evidence attached")}
       </div>
 
-      ${renderPortfolioClearFirst(summary.clearFirst)}
+      ${renderPortfolioClearFirst(summary)}
 
       <div class="portfolio-grid">
         ${models.map(renderPortfolioCard).join("")}
@@ -4162,6 +4308,18 @@ function bindEvents() {
   document.querySelector("[data-action='reset']")?.addEventListener("click", resetDemo)
   document.querySelectorAll("[data-share-copy]").forEach((button) => {
     button.addEventListener("click", () => copySharePackageItem(button.dataset.shareCopy))
+  })
+  document.querySelectorAll("[data-clear-first-form]").forEach((form) => {
+    form.addEventListener("submit", saveClearFirstNote)
+  })
+  document.querySelectorAll("[data-clear-first-save]").forEach((button) => {
+    button.addEventListener("click", () => saveClearFirstNoteButton(button))
+  })
+  document.querySelectorAll("[data-clear-first-resolve]").forEach((button) => {
+    button.addEventListener("click", () => resolveClearFirstItem(button))
+  })
+  document.querySelectorAll("[data-clear-first-reopen]").forEach((button) => {
+    button.addEventListener("click", () => reopenClearFirstItem(button))
   })
   document.querySelectorAll("[data-action='cancel-edit']").forEach((button) => {
     button.addEventListener("click", cancelEdit)

@@ -51,7 +51,10 @@ function mergeProduct(seedProduct, storedProduct = {}) {
     })),
     launchSnapshots: Array.isArray(storedProduct.launchSnapshots)
       ? storedProduct.launchSnapshots
-      : structuredClone(seedProduct.launchSnapshots ?? [])
+      : structuredClone(seedProduct.launchSnapshots ?? []),
+    clearFirstStates: Array.isArray(storedProduct.clearFirstStates)
+      ? storedProduct.clearFirstStates
+      : structuredClone(seedProduct.clearFirstStates ?? [])
   }
 }
 
