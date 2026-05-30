@@ -1524,6 +1524,121 @@ button {
   gap: 12px;
 }
 
+.publish-path {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.018));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+}
+
+.publish-path--blocked {
+  border-color: rgba(255, 92, 30, 0.3);
+}
+
+.publish-path--at-risk {
+  border-color: rgba(117, 167, 255, 0.32);
+}
+
+.publish-path--ready {
+  border-color: rgba(91, 207, 132, 0.32);
+}
+
+.publish-path__hero {
+  align-items: start;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.publish-path__hero h2 {
+  font-size: 28px;
+  line-height: 1.1;
+  margin: 8px 0;
+}
+
+.publish-path__hero p:not(.eyebrow) {
+  color: var(--muted);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.publish-path__facts {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.publish-path__facts span {
+  background: rgba(255,255,255,0.035);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  color: var(--muted);
+  line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  padding: 14px;
+}
+
+.publish-path__facts strong {
+  color: var(--ember);
+  display: block;
+  font-size: 12px;
+  font-weight: 900;
+  margin-bottom: 7px;
+  text-transform: uppercase;
+}
+
+.publish-path__steps {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.publish-step {
+  background: rgba(255,255,255,0.035);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 34px minmax(0, 1fr);
+  padding: 12px;
+}
+
+.publish-step > span {
+  align-items: center;
+  background: rgba(255, 92, 30, 0.12);
+  border: 1px solid rgba(255, 92, 30, 0.24);
+  border-radius: 999px;
+  color: var(--ember);
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 900;
+  height: 30px;
+  justify-content: center;
+  width: 30px;
+}
+
+.publish-step--ready > span {
+  border-color: rgba(91, 207, 132, 0.28);
+  color: var(--green);
+}
+
+.publish-step strong {
+  display: block;
+  line-height: 1.2;
+}
+
+.publish-step p {
+  color: var(--muted);
+  line-height: 1.4;
+  margin: 5px 0 0;
+}
+
 .launch-preview {
   display: grid;
   gap: 18px;
@@ -1956,6 +2071,8 @@ button {
   .share-package__hero,
   .share-package__copy-grid,
   .share-package__grid,
+  .publish-path__hero,
+  .publish-path__facts,
   .evidence-command,
   .evidence-grid,
   .evidence-card,
@@ -2061,6 +2178,10 @@ button {
   }
 
   .share-list li {
+    grid-template-columns: 1fr;
+  }
+
+  .publish-step {
     grid-template-columns: 1fr;
   }
 }
