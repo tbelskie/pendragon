@@ -87,9 +87,20 @@ In v0.16, Portfolio becomes the command center above the product rooms:
 - ranked product cards
 - direct routing into Warroom, Setup, and Forge
 
+In v0.17, Portfolio adds the Clear First command queue:
+
+- ranked unblock moves across products
+- severity from stage mismatch, gate blockers, critical docs, Forge QA, proof, decisions, and setup gaps
+- direct routing into the module where the work lives
+- product cards show their top Clear First item
+
 The portfolio view should answer:
 
 > Which product needs my attention next?
+
+The Clear First queue should answer:
+
+> What should I unblock before adding more work?
 
 ### Product Warroom
 
