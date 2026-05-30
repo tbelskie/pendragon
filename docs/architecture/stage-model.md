@@ -101,6 +101,59 @@ Pendragon should produce:
 - pricing revisit
 - product iteration focus
 
+## Expanded Operating Modes
+
+v0.14 adds three practical states that show up constantly in indie portfolios:
+
+### Shipped Mode
+
+For products that are public but not yet managed as a business.
+
+Primary job:
+
+> Turn a shipped product into a revenue and learning system.
+
+Pendragon should produce:
+
+- traction baseline
+- retained-user question
+- conversion review
+- support/docs gap list
+- pricing revisit
+- maintenance vs monetization decision
+
+### Stalled Mode
+
+For products that exist but have lost momentum.
+
+Primary job:
+
+> Find the smallest credible move that can restart product signal.
+
+Pendragon should produce:
+
+- stop reason
+- restart move
+- scope cut
+- proof target
+- relaunch or park decision
+
+### Relaunch Mode
+
+For products with old attention, dormant users, or a stronger new promise.
+
+Primary job:
+
+> Restart attention with a sharper promise, proof loop, and conversion path.
+
+Pendragon should produce:
+
+- relaunch angle
+- proof links
+- listing/page audit
+- feedback path
+- next experiment
+
 ## Setup Questions
 
 The first setup flow should ask:
@@ -116,3 +169,24 @@ The first setup flow should ask:
 
 The answers determine the initial room.
 
+v0.14 setup adds:
+
+- product type
+- business model
+- current goal
+- stage override or stage inference
+- user access signal
+- charging signal
+- traction or proof note
+- source link
+
+Inference is intentionally simple:
+
+- explicit stage override wins
+- relaunch goal with traction points to Relaunch
+- relaunch goal without traction points to Stalled
+- grow goal points to Growth
+- monetization goal with user access points to Launch
+- beta goal with prototype points to Beta
+- prototype goal with prototype points to Prototype
+- validation without prototype points to Idea

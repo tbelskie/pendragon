@@ -14,6 +14,7 @@ type Product = {
   problem: string
   promise: string
   repoUrl?: string
+  setupProfile?: ProductSetupProfile
   revenueGoal?: string
   currentMilestoneId?: string
   targetDate?: string
@@ -25,7 +26,54 @@ type Product = {
 ## FounderStage
 
 ```ts
-type FounderStage = "idea" | "prototype" | "beta" | "launch" | "growth"
+type FounderStage =
+  | "idea"
+  | "prototype"
+  | "beta"
+  | "launch"
+  | "shipped"
+  | "stalled"
+  | "relaunch"
+  | "growth"
+```
+
+## ProductSetupProfile
+
+```ts
+type ProductSetupProfile = {
+  productType:
+    | "web-app"
+    | "desktop-app"
+    | "chrome-extension"
+    | "mobile-app"
+    | "api"
+    | "content-product"
+    | "services"
+    | "other"
+  businessModel:
+    | "unknown"
+    | "free"
+    | "one-time-license"
+    | "subscription"
+    | "usage-based"
+    | "services"
+    | "marketplace"
+  currentGoal:
+    | "validate"
+    | "prototype"
+    | "beta"
+    | "launch"
+    | "monetize"
+    | "relaunch"
+    | "grow"
+  stageOverride?: FounderStage | "auto"
+  hasPrototype?: "yes" | "no" | "unknown"
+  hasRepo?: "yes" | "no" | "unknown"
+  usersHaveAccess?: "yes" | "no" | "unknown"
+  isCharging?: "yes" | "no" | "unknown"
+  sourceLink?: string
+  traction?: string
+}
 ```
 
 ## Milestone
@@ -154,4 +202,3 @@ Suggested key:
 ```text
 pendragon.workspace.v1
 ```
-
