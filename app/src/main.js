@@ -10,7 +10,7 @@ import {
 } from "./domain/stages.js"
 
 let workspace = loadWorkspace()
-let activeView = "warroom"
+let activeView = "portfolio"
 let isEditing = false
 let isCreatingProduct = false
 let hasUnsavedFormChanges = false
@@ -18,6 +18,7 @@ let statusMessage = "Local-only workspace"
 let errorMessage = ""
 
 const views = [
+  { id: "portfolio", label: "Portfolio" },
   { id: "setup", label: "Setup" },
   { id: "warroom", label: "Warroom" },
   { id: "brief", label: "Brief" },
@@ -844,6 +845,91 @@ function gateStatus(product) {
   }
 }
 
+function proofCountForProduct(product, evidence) {
+  const docsProofLinks = productDocsAssets(product).filter((asset) => safeProofLink(asset.proofLink)).length
+  return docsProofLinks + evidence.safeSources.length
+}
+
+function portfolioReason({ docs, engine, gate, proofCount }) {
+  if (engine.stageChanged) {
+    return `Signals point to ${stageLabels[engine.inferredStage]}; saved room is ${stageLabels[engine.savedStage]}.`
+  }
+
+  if (gate.blockers.length) {
+    return gate.blockers[0].next
+  }
+
+  if (docs.criticalOpen) {
+    return `${docs.criticalOpen} critical docs asset${docs.criticalOpen === 1 ? "" : "s"} need attention.`
+  }
+
+  if (!proofCount) {
+    return "Attach proof before pushing the launch surface wider."
+  }
+
+  if (engine.missingAssets.length) {
+    return engine.missingAssets[0].next
+  }
+
+  return gate.nextMoves[0] ?? engine.nextActions[0] ?? "Keep the room current and choose the next experiment."
+}
+
+function portfolioProductModel(product) {
+  const docs = docsStats(product)
+  const evidence = evidenceStats(product)
+  const gate = gateStatus(product)
+  const engine = stageEngineResult(product)
+  const readiness = readinessPercent(product)
+  const proofCount = proofCountForProduct(product, evidence)
+  const riskScore = Math.min(100, Math.round(
+    ((100 - readiness) * 0.22)
+    + (gate.level === "blocked" ? 30 : gate.level === "at-risk" ? 18 : 4)
+    + (docs.criticalOpen * 8)
+    + (gate.unresolved.length * 5)
+    + (engine.missingAssets.length * 5)
+    + (proofCount ? 0 : 8)
+    + (engine.stageChanged ? 12 : 0)
+  ))
+  const nextMove = gate.nextMoves[0]
+    ?? engine.nextActions[0]
+    ?? (product.nextActions ?? []).find(Boolean)
+    ?? "Choose the next product move."
+
+  return {
+    docs,
+    engine,
+    evidence,
+    gate,
+    nextMove,
+    product,
+    proofCount,
+    readiness,
+    reason: portfolioReason({ docs, engine, gate, proofCount }),
+    riskScore
+  }
+}
+
+function portfolioModels() {
+  return workspace.products
+    .map(portfolioProductModel)
+    .sort((left, right) => right.riskScore - left.riskScore)
+}
+
+function portfolioSummary(models) {
+  const averageReadiness = models.length
+    ? Math.round(models.reduce((total, item) => total + item.readiness, 0) / models.length)
+    : 0
+
+  return {
+    averageReadiness,
+    blocked: models.filter((item) => item.gate.level === "blocked").length,
+    products: models.length,
+    recommended: models[0],
+    stageMismatches: models.filter((item) => item.engine.stageChanged).length,
+    withProof: models.filter((item) => item.proofCount > 0).length
+  }
+}
+
 function launchSurfaceModel(product) {
   const brief = product.brief ?? {}
   const gate = gateStatus(product)
@@ -964,6 +1050,18 @@ function setActiveProduct(productId) {
   if (!canDiscardActiveWork()) return
 
   const nextWorkspace = { ...workspace, activeProductId: productId }
+  isEditing = false
+  isCreatingProduct = false
+  hasUnsavedFormChanges = false
+  commitWorkspace(nextWorkspace, "Local-only workspace")
+  render()
+}
+
+function openProduct(productId, view = "warroom") {
+  if (!canDiscardActiveWork()) return
+
+  const nextWorkspace = { ...workspace, activeProductId: productId }
+  activeView = view
   isEditing = false
   isCreatingProduct = false
   hasUnsavedFormChanges = false
@@ -1625,6 +1723,110 @@ function renderSetupAction(action, index) {
       <span>${index + 1}</span>
       <p>${escapeHtml(action)}</p>
     </li>
+  `
+}
+
+function renderPortfolioMetric(label, value, detail) {
+  return `
+    <article>
+      <strong>${escapeHtml(value)}</strong>
+      <span>${escapeHtml(label)}</span>
+      <small>${escapeHtml(detail)}</small>
+    </article>
+  `
+}
+
+function portfolioScoreLevel(score) {
+  if (score >= 70) return "urgent"
+  if (score >= 45) return "focus"
+  return "steady"
+}
+
+function renderPortfolioCard(item, index) {
+  const level = portfolioScoreLevel(item.riskScore)
+  const stageLabel = stageLabels[item.product.stage] ?? item.product.stage
+  const inferredLabel = stageLabels[item.engine.inferredStage] ?? item.engine.inferredStage
+  const mismatch = item.engine.stageChanged
+    ? `<span class="portfolio-card__alert">Signals: ${escapeHtml(inferredLabel)}</span>`
+    : ""
+
+  return `
+    <article class="portfolio-card portfolio-card--${escapeHtml(level)}">
+      <header class="portfolio-card__header">
+        <div>
+          <span>${index === 0 ? "Recommended" : stageLabel}</span>
+          <h3>${escapeHtml(item.product.name)}</h3>
+          <p>${escapeHtml(item.product.oneLiner)}</p>
+        </div>
+        <aside>
+          <strong>${item.riskScore}</strong>
+          <small>attention</small>
+        </aside>
+      </header>
+      <div class="portfolio-card__stats">
+        <span><strong>${item.readiness}%</strong>Readiness</span>
+        <span><strong>${item.gate.gateScore}%</strong>Gate</span>
+        <span><strong>${item.docs.ready}/${item.docs.assets.length}</strong>Docs</span>
+        <span><strong>${item.proofCount}</strong>Proof</span>
+      </div>
+      <div class="portfolio-card__body">
+        <p>${escapeHtml(item.reason)}</p>
+        ${mismatch}
+        <small>${escapeHtml(item.nextMove)}</small>
+      </div>
+      <footer class="portfolio-card__actions">
+        <button class="quiet-button" type="button" data-open-product="${escapeHtml(item.product.id)}" data-open-view="warroom">Warroom</button>
+        <button class="quiet-button" type="button" data-open-product="${escapeHtml(item.product.id)}" data-open-view="setup">Setup</button>
+        <button class="primary-button" type="button" data-open-product="${escapeHtml(item.product.id)}" data-open-view="forge">Forge</button>
+      </footer>
+    </article>
+  `
+}
+
+function renderPortfolio() {
+  const models = portfolioModels()
+  const summary = portfolioSummary(models)
+  const recommended = summary.recommended
+
+  if (!recommended) {
+    return `
+      <section class="portfolio-command">
+        <article class="empty-state">
+          <p class="eyebrow">Portfolio Command</p>
+          <h3>Create a product room to start commanding the portfolio.</h3>
+          <button class="primary-button" type="button" data-action="new-product">New product</button>
+        </article>
+      </section>
+    `
+  }
+
+  return `
+    <section class="portfolio-command">
+      <article class="portfolio-hero portfolio-hero--${escapeHtml(portfolioScoreLevel(recommended.riskScore))}">
+        <div>
+          <p class="eyebrow">Portfolio Command</p>
+          <h2>Point effort where it matters next.</h2>
+          <p>${escapeHtml(recommended.product.name)} is the next recommended focus: ${escapeHtml(recommended.reason)}</p>
+        </div>
+        <aside>
+          <span>${recommended.riskScore}</span>
+          <strong>${escapeHtml(recommended.product.name)}</strong>
+          <small>${escapeHtml(recommended.nextMove)}</small>
+        </aside>
+      </article>
+
+      <div class="portfolio-metrics">
+        ${renderPortfolioMetric("Products", summary.products, "Rooms tracked")}
+        ${renderPortfolioMetric("Avg readiness", `${summary.averageReadiness}%`, "Portfolio pulse")}
+        ${renderPortfolioMetric("Blocked gates", summary.blocked, "Need clearing")}
+        ${renderPortfolioMetric("Stage mismatches", summary.stageMismatches, "Signals disagree")}
+        ${renderPortfolioMetric("With proof", `${summary.withProof}/${summary.products}`, "Evidence attached")}
+      </div>
+
+      <div class="portfolio-grid">
+        ${models.map(renderPortfolioCard).join("")}
+      </div>
+    </section>
   `
 }
 
@@ -3728,6 +3930,7 @@ function renderForge(product) {
 }
 
 function renderActiveView(product) {
+  if (activeView === "portfolio") return renderPortfolio()
   if (activeView === "setup" && isCreatingProduct) return renderCreateProduct()
   if (activeView === "setup") return renderSetup(product)
   if (activeView === "brief") return renderBrief(product)
@@ -3745,6 +3948,9 @@ function bindEvents() {
   })
   document.querySelectorAll("[data-view]").forEach((button) => {
     button.addEventListener("click", () => setActiveView(button.dataset.view))
+  })
+  document.querySelectorAll("[data-open-product]").forEach((button) => {
+    button.addEventListener("click", () => openProduct(button.dataset.openProduct, button.dataset.openView || "warroom"))
   })
 
   document.querySelector("[data-action='edit']")?.addEventListener("click", editRoom)
@@ -3786,11 +3992,17 @@ function bindEvents() {
 
 function render() {
   const product = activeProduct()
-  const percent = isCreatingProduct ? 0 : readinessPercent(product)
-  const headerStage = isCreatingProduct ? "Setup" : (stageLabels[product.stage] ?? product.stage)
-  const headerName = isCreatingProduct ? "New product" : product.name
-  const headerStatus = isCreatingProduct ? "Create a local product room" : `${product.status} - Target: ${product.targetDate}`
-  const scoreLabel = isCreatingProduct ? "Starter readiness" : "Launch readiness"
+  const portfolioView = activeView === "portfolio"
+  const portfolio = portfolioView ? portfolioSummary(portfolioModels()) : null
+  const percent = isCreatingProduct ? 0 : portfolioView ? portfolio.averageReadiness : readinessPercent(product)
+  const headerStage = isCreatingProduct ? "Setup" : portfolioView ? "Portfolio" : (stageLabels[product.stage] ?? product.stage)
+  const headerName = isCreatingProduct ? "New product" : portfolioView ? "Command Center" : product.name
+  const headerStatus = isCreatingProduct
+    ? "Create a local product room"
+    : portfolioView
+      ? `${portfolio.products} product rooms - ${portfolio.blocked} blocked gates`
+      : `${product.status} - Target: ${product.targetDate}`
+  const scoreLabel = isCreatingProduct ? "Starter readiness" : portfolioView ? "Avg readiness" : "Launch readiness"
   const app = document.querySelector("#app")
 
   app.innerHTML = `
