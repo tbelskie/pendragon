@@ -50,6 +50,20 @@ function safeProofLink(value) {
   return /^https?:\/\//i.test(link) ? link : ""
 }
 
+function fallbackText(value, fallback) {
+  const text = String(value ?? "").trim()
+  return text || fallback
+}
+
+function slugifyFilename(value) {
+  const slug = String(value ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+
+  return slug || "product"
+}
+
 function numberValue(value, fallback = 0) {
   const parsed = Number.parseInt(value, 10)
   return Number.isFinite(parsed) ? parsed : fallback
@@ -75,6 +89,10 @@ function docsStats(product) {
   const percent = assets.length ? Math.round((ready / assets.length) * 100) : 0
 
   return { assets, ready, drafting, blocked, missing, criticalOpen, percent }
+}
+
+function docsPriorityRank(priority) {
+  return ({ Critical: 0, High: 1, Medium: 2, Low: 3 })[priority] ?? 4
 }
 
 function readinessSection(product, name) {
@@ -195,6 +213,49 @@ function gateStatus(product) {
     trust,
     unresolved,
     verdict
+  }
+}
+
+function launchSurfaceModel(product) {
+  const brief = product.brief ?? {}
+  const gate = gateStatus(product)
+  const nextActions = (product.nextActions ?? []).filter(Boolean)
+  const readyAssets = gate.docs.assets.filter((asset) => asset.status === "ready")
+  const proofAssets = gate.docs.assets.filter((asset) => safeProofLink(asset.proofLink))
+  const openAssets = gate.docs.assets
+    .filter((asset) => asset.status !== "ready")
+    .sort((left, right) => docsPriorityRank(left.priority) - docsPriorityRank(right.priority))
+  const launchGaps = [
+    ...openAssets.map((asset) => ({
+      detail: asset.nextStep || asset.purpose,
+      label: "Doc",
+      title: asset.title
+    })),
+    ...gate.unresolved.map((decision) => ({
+      detail: decision.context || decision.revisitTrigger,
+      label: "Decision",
+      title: decision.title
+    }))
+  ].slice(0, 6)
+
+  return {
+    audience: fallbackText(product.user, "Early users who need the clearest possible product promise."),
+    gate,
+    launchGaps,
+    milestone: fallbackText(brief.primaryMilestone, product.targetDate || "First credible launch milestone."),
+    name: fallbackText(product.name, "Untitled Product"),
+    nextActions,
+    oneLiner: fallbackText(product.oneLiner, "A focused product launch surface."),
+    openAssets,
+    pricing: fallbackText(brief.pricingHypothesis, "Pricing hypothesis not captured yet."),
+    problem: fallbackText(brief.problem, "The launch room has not captured the core problem yet."),
+    proofAssets,
+    promise: fallbackText(brief.promise, "The launch room has not captured the product promise yet."),
+    readyAssets,
+    stageLabel: stageLabels[product.stage] ?? product.stage,
+    strategicConstraint: fallbackText(brief.strategicConstraint, "No strategic constraint captured yet."),
+    supportReady: supportAssetIsReady(product),
+    targetDate: fallbackText(product.targetDate, "Target date not set")
   }
 }
 
@@ -417,20 +478,41 @@ function resetDemo() {
   render()
 }
 
-function exportWorkspace() {
-  const blob = new Blob([JSON.stringify(workspace, null, 2)], { type: "application/json" })
+function downloadFile(content, filename, type) {
+  const blob = new Blob([content], { type })
   const url = URL.createObjectURL(blob)
   const link = document.createElement("a")
-  const date = new Date().toISOString().slice(0, 10)
 
   link.href = url
-  link.download = `pendragon-workspace-${date}.json`
+  link.download = filename
   document.body.append(link)
   link.click()
   link.remove()
   window.setTimeout(() => URL.revokeObjectURL(url), 0)
+}
+
+function exportWorkspace() {
+  const date = new Date().toISOString().slice(0, 10)
+
+  downloadFile(
+    JSON.stringify(workspace, null, 2),
+    `pendragon-workspace-${date}.json`,
+    "application/json"
+  )
 
   statusMessage = "Workspace JSON exported"
+  errorMessage = ""
+  render()
+}
+
+function exportLaunchSurface() {
+  const product = activeProduct()
+  const date = new Date().toISOString().slice(0, 10)
+  const filename = `pendragon-launch-surface-${slugifyFilename(product.name)}-${date}.html`
+
+  downloadFile(buildLaunchSurfaceHtml(product), filename, "text/html")
+
+  statusMessage = `${product.name} launch surface HTML exported`
   errorMessage = ""
   render()
 }
@@ -607,8 +689,8 @@ function renderWarroom(product) {
       <article class="panel forge">
         <p class="eyebrow">Forge</p>
         <h3>Build Launch Site</h3>
-        <p>Future module: turn this product room into a landing page, docs, FAQ, pricing, changelog, and trust surface.</p>
-        <button disabled>Coming next</button>
+        <p>Generate a first launch surface from the brief, docs, decisions, and readiness gate.</p>
+        <button type="button" data-view="forge">Open Forge</button>
       </article>
     </section>
   `
@@ -946,32 +1028,513 @@ function renderGate(product) {
   `
 }
 
+function renderForgeSignal(signal) {
+  return `
+    <article class="${signal.ready ? "ready" : ""}">
+      <span>${escapeHtml(signal.status)}</span>
+      <strong>${escapeHtml(signal.label)}</strong>
+      <small>${escapeHtml(signal.detail)}</small>
+    </article>
+  `
+}
+
+function renderLaunchGap(gap) {
+  return `
+    <li>
+      <span>${escapeHtml(gap.label)}</span>
+      <div>
+        <strong>${escapeHtml(gap.title)}</strong>
+        <p>${escapeHtml(gap.detail || "Capture the next move before launch.")}</p>
+      </div>
+    </li>
+  `
+}
+
+function renderProofAsset(asset) {
+  const proofLink = safeProofLink(asset.proofLink)
+
+  return `
+    <article>
+      <span>${escapeHtml(asset.priority)}</span>
+      <strong>${escapeHtml(asset.title)}</strong>
+      <p>${escapeHtml(asset.purpose)}</p>
+      ${proofLink ? `<a href="${escapeHtml(proofLink)}" rel="noreferrer" target="_blank">Open proof</a>` : ""}
+    </article>
+  `
+}
+
+function renderLaunchSurfacePreview(product) {
+  const surface = launchSurfaceModel(product)
+  const proofAssets = surface.proofAssets.length
+    ? surface.proofAssets.map(renderProofAsset).join("")
+    : `
+      <article>
+        <span>Proof</span>
+        <strong>No proof links attached yet.</strong>
+        <p>Add proof links in Docs when a source exists in GitHub, Google Docs, or another public draft.</p>
+      </article>
+    `
+  const readyAssets = surface.readyAssets.length
+    ? surface.readyAssets.slice(0, 4).map((asset) => `<li>${escapeHtml(asset.title)}</li>`).join("")
+    : "<li>No ready docs assets yet.</li>"
+  const gaps = surface.launchGaps.length
+    ? surface.launchGaps.map(renderLaunchGap).join("")
+    : `
+      <li>
+        <span>Clear</span>
+        <div>
+          <strong>No major launch gaps surfaced.</strong>
+          <p>Keep the room current as new launch risks appear.</p>
+        </div>
+      </li>
+    `
+  const nextActions = surface.nextActions.length
+    ? surface.nextActions.map((action, index) => `
+      <li>
+        <span>${index + 1}</span>
+        <p>${escapeHtml(action)}</p>
+      </li>
+    `).join("")
+    : `
+      <li>
+        <span>1</span>
+        <p>Capture the next launch move in the warroom.</p>
+      </li>
+    `
+
+  return `
+    <article class="launch-preview" aria-label="Generated launch surface preview">
+      <header class="launch-preview__hero">
+        <div>
+          <p class="eyebrow">Generated Launch Surface</p>
+          <h2>${escapeHtml(surface.name)}</h2>
+          <p>${escapeHtml(surface.oneLiner)}</p>
+        </div>
+        <div class="launch-preview__status launch-preview__status--${escapeHtml(surface.gate.level)}">
+          <span>${surface.gate.gateScore}%</span>
+          <strong>${escapeHtml(surface.gate.verdict)}</strong>
+          <small>${surface.gate.blockers.length} blockers / ${surface.gate.risks.length} risks</small>
+        </div>
+      </header>
+
+      <div class="launch-preview__facts">
+        <span><strong>Audience</strong>${escapeHtml(surface.audience)}</span>
+        <span><strong>Mode</strong>${escapeHtml(surface.stageLabel)}</span>
+        <span><strong>Target</strong>${escapeHtml(surface.targetDate)}</span>
+      </div>
+
+      <div class="launch-preview__copy">
+        <section>
+          <p class="eyebrow">Problem</p>
+          <h3>${escapeHtml(surface.problem)}</h3>
+        </section>
+        <section>
+          <p class="eyebrow">Promise</p>
+          <h3>${escapeHtml(surface.promise)}</h3>
+        </section>
+        <section>
+          <p class="eyebrow">Milestone</p>
+          <p>${escapeHtml(surface.milestone)}</p>
+        </section>
+        <section>
+          <p class="eyebrow">Pricing</p>
+          <p>${escapeHtml(surface.pricing)}</p>
+        </section>
+        <section class="wide">
+          <p class="eyebrow">Strategic Constraint</p>
+          <p>${escapeHtml(surface.strategicConstraint)}</p>
+        </section>
+      </div>
+
+      <div class="launch-preview__split">
+        <section>
+          <div class="preview-section-heading">
+            <p class="eyebrow">Proof And Docs</p>
+            <span>${surface.readyAssets.length}/${surface.gate.docs.assets.length} ready</span>
+          </div>
+          <div class="proof-grid">
+            ${proofAssets}
+          </div>
+          <ul class="ready-list">
+            ${readyAssets}
+          </ul>
+        </section>
+
+        <section>
+          <div class="preview-section-heading">
+            <p class="eyebrow">Still Missing</p>
+            <span>${surface.launchGaps.length} surfaced</span>
+          </div>
+          <ul class="gap-list">
+            ${gaps}
+          </ul>
+        </section>
+      </div>
+
+      <footer class="launch-preview__footer">
+        <div>
+          <p class="eyebrow">Next Actions</p>
+          <ol class="actions">
+            ${nextActions}
+          </ol>
+        </div>
+        <aside>
+          <strong>${surface.supportReady ? "Support path ready" : "Support path not ready"}</strong>
+          <p>${surface.supportReady
+            ? "The launch surface can point users toward feedback and support."
+            : "Add a ready support or feedback docs asset before inviting beta users."}</p>
+        </aside>
+      </footer>
+    </article>
+  `
+}
+
+function buildLaunchSurfaceHtml(product) {
+  const surface = launchSurfaceModel(product)
+  const generatedAt = new Date().toLocaleDateString([], { month: "long", day: "numeric", year: "numeric" })
+  const proofItems = surface.proofAssets.length
+    ? surface.proofAssets.map((asset) => {
+      const proofLink = safeProofLink(asset.proofLink)
+
+      return `
+        <article class="card">
+          <span>${escapeHtml(asset.priority)}</span>
+          <h3>${escapeHtml(asset.title)}</h3>
+          <p>${escapeHtml(asset.purpose)}</p>
+          ${proofLink ? `<a href="${escapeHtml(proofLink)}" rel="noreferrer" target="_blank">Open proof</a>` : ""}
+        </article>
+      `
+    }).join("")
+    : `
+      <article class="card">
+        <span>Proof</span>
+        <h3>No proof links attached yet.</h3>
+        <p>Add proof links in Pendragon Docs before publishing this surface.</p>
+      </article>
+    `
+  const gapItems = surface.launchGaps.length
+    ? surface.launchGaps.map((gap) => `
+      <li>
+        <span>${escapeHtml(gap.label)}</span>
+        <strong>${escapeHtml(gap.title)}</strong>
+        <p>${escapeHtml(gap.detail || "Capture the next move before launch.")}</p>
+      </li>
+    `).join("")
+    : `
+      <li>
+        <span>Clear</span>
+        <strong>No major launch gaps surfaced.</strong>
+        <p>Keep the room current as new launch risks appear.</p>
+      </li>
+    `
+  const actionItems = surface.nextActions.length
+    ? surface.nextActions.map((action, index) => `<li><span>${index + 1}</span>${escapeHtml(action)}</li>`).join("")
+    : "<li><span>1</span>Capture the next launch move in Pendragon.</li>"
+
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${escapeHtml(surface.name)} Launch Surface</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        --bg: #050608;
+        --surface: #0d1017;
+        --line: rgba(255, 255, 255, 0.12);
+        --text: #f5f2ed;
+        --muted: #a4a9b5;
+        --dim: #6d7482;
+        --ember: #ff5c1e;
+        --green: #5bcf84;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        background: radial-gradient(circle at 78% 0%, rgba(255, 92, 30, 0.14), transparent 34%), var(--bg);
+        color: var(--text);
+        margin: 0;
+      }
+
+      main {
+        display: grid;
+        gap: 28px;
+        margin: 0 auto;
+        max-width: 1040px;
+        padding: 42px 22px 56px;
+      }
+
+      .eyebrow {
+        color: var(--dim);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        margin: 0;
+        text-transform: uppercase;
+      }
+
+      .hero,
+      .section {
+        background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.018));
+        border: 1px solid var(--line);
+        border-radius: 10px;
+      }
+
+      .hero {
+        display: grid;
+        gap: 24px;
+        grid-template-columns: minmax(0, 1fr) 210px;
+        padding: 34px;
+      }
+
+      h1 {
+        font-size: 48px;
+        letter-spacing: 0;
+        line-height: 1;
+        margin: 10px 0;
+      }
+
+      .hero p:not(.eyebrow),
+      .section p,
+      li p {
+        color: var(--muted);
+      }
+
+      .status {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        display: grid;
+        gap: 6px;
+        padding: 18px;
+      }
+
+      .status span {
+        color: var(--ember);
+        font-size: 40px;
+        font-weight: 900;
+      }
+
+      .facts,
+      .copy,
+      .grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      .facts,
+      .grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .facts span,
+      .card,
+      .copy section,
+      .actions li,
+      .gaps li {
+        background: rgba(255,255,255,0.035);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 16px;
+      }
+
+      .facts strong,
+      .card span,
+      .gaps span,
+      .actions span {
+        color: var(--ember);
+        display: block;
+        font-size: 12px;
+        font-weight: 900;
+        margin-bottom: 7px;
+        text-transform: uppercase;
+      }
+
+      .section {
+        display: grid;
+        gap: 16px;
+        padding: 24px;
+      }
+
+      .section h2 {
+        font-size: 28px;
+        line-height: 1.1;
+        margin: 0;
+      }
+
+      .copy {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .copy .wide {
+        grid-column: 1 / -1;
+      }
+
+      .card h3,
+      .copy h3 {
+        font-size: 20px;
+        line-height: 1.2;
+        margin: 0;
+      }
+
+      .card a {
+        color: var(--ember);
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      .gaps,
+      .actions {
+        display: grid;
+        gap: 10px;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      footer {
+        color: var(--dim);
+        font-size: 13px;
+      }
+
+      @media (max-width: 780px) {
+        .hero,
+        .facts,
+        .copy,
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        h1 {
+          font-size: 38px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header class="hero">
+        <div>
+          <p class="eyebrow">${escapeHtml(surface.stageLabel)} / ${escapeHtml(surface.targetDate)}</p>
+          <h1>${escapeHtml(surface.name)}</h1>
+          <p>${escapeHtml(surface.oneLiner)}</p>
+        </div>
+        <aside class="status">
+          <span>${surface.gate.gateScore}%</span>
+          <strong>${escapeHtml(surface.gate.verdict)}</strong>
+          <small>${surface.gate.blockers.length} blockers / ${surface.gate.risks.length} risks</small>
+        </aside>
+      </header>
+
+      <section class="facts">
+        <span><strong>Audience</strong>${escapeHtml(surface.audience)}</span>
+        <span><strong>Milestone</strong>${escapeHtml(surface.milestone)}</span>
+        <span><strong>Pricing</strong>${escapeHtml(surface.pricing)}</span>
+      </section>
+
+      <section class="section">
+        <p class="eyebrow">Launch Story</p>
+        <h2>The clearest version of the product today.</h2>
+        <div class="copy">
+          <section>
+            <p class="eyebrow">Problem</p>
+            <h3>${escapeHtml(surface.problem)}</h3>
+          </section>
+          <section>
+            <p class="eyebrow">Promise</p>
+            <h3>${escapeHtml(surface.promise)}</h3>
+          </section>
+          <section class="wide">
+            <p class="eyebrow">Constraint</p>
+            <p>${escapeHtml(surface.strategicConstraint)}</p>
+          </section>
+        </div>
+      </section>
+
+      <section class="section">
+        <p class="eyebrow">Proof And Docs</p>
+        <h2>What can be trusted or inspected right now.</h2>
+        <div class="grid">
+          ${proofItems}
+        </div>
+      </section>
+
+      <section class="section">
+        <p class="eyebrow">Launch Gaps</p>
+        <h2>What must get clearer before this goes wider.</h2>
+        <ul class="gaps">
+          ${gapItems}
+        </ul>
+      </section>
+
+      <section class="section">
+        <p class="eyebrow">Next Actions</p>
+        <h2>The current launch moves.</h2>
+        <ol class="actions">
+          ${actionItems}
+        </ol>
+      </section>
+
+      <footer>
+        Draft generated by Pendragon on ${escapeHtml(generatedAt)}. Review before publishing.
+      </footer>
+    </main>
+  </body>
+</html>`
+}
+
 function renderForge(product) {
   const brief = product.brief ?? {}
-  const stats = docsStats(product)
+  const surface = launchSurfaceModel(product)
   const readySignals = [
-    ["Brief", product.oneLiner && brief.promise],
-    ["Decision", product.decisions?.length],
-    ["Docs", stats.ready > 0],
-    ["Trust", product.readiness?.find((section) => section.name === "Trust")?.done > 0]
+    {
+      detail: "One-liner and promise",
+      label: "Brief",
+      ready: Boolean(product.oneLiner && brief.promise),
+      status: product.oneLiner && brief.promise ? "Ready" : "Missing"
+    },
+    {
+      detail: `${surface.gate.docs.ready}/${surface.gate.docs.assets.length} docs ready`,
+      label: "Docs",
+      ready: surface.gate.docs.ready > 0,
+      status: surface.gate.docs.ready > 0 ? "Ready" : "Missing"
+    },
+    {
+      detail: `${surface.proofAssets.length} external proof link${surface.proofAssets.length === 1 ? "" : "s"}`,
+      label: "Proof",
+      ready: surface.proofAssets.length > 0,
+      status: surface.proofAssets.length > 0 ? "Attached" : "Missing"
+    },
+    {
+      detail: surface.gate.summary,
+      label: "Gate",
+      ready: surface.gate.level !== "blocked",
+      status: surface.gate.level === "ready" ? "Ready" : surface.gate.level === "at-risk" ? "At risk" : "Blocked"
+    }
   ]
 
   return `
     <section class="launch-surface forge-surface">
-      <div>
-        <p class="eyebrow">Forge</p>
-        <h2>Build the launch surface from the room.</h2>
-        <p>Forge will eventually turn the product room into a landing page, docs, FAQ, pricing, changelog, and trust page.</p>
-      </div>
+      <article class="forge-hero">
+        <div>
+          <p class="eyebrow">Forge</p>
+          <h2>Build the first launch surface from the room.</h2>
+          <p>Forge turns the brief, docs tracker, decisions, and readiness gate into a launch-page draft you can inspect and export.</p>
+        </div>
+        <div class="forge-actions">
+          <button class="primary-button" type="button" data-action="export-launch-surface">Download HTML draft</button>
+          <button class="quiet-button" type="button" data-view="brief">Edit Brief</button>
+          <button class="quiet-button" type="button" data-view="docs">Open Docs</button>
+        </div>
+      </article>
+
       <div class="forge-readiness">
-        ${readySignals.map(([label, ready]) => `
-          <article class="${ready ? "ready" : ""}">
-            <span>${ready ? "Ready" : "Missing"}</span>
-            <strong>${escapeHtml(label)}</strong>
-          </article>
-        `).join("")}
+        ${readySignals.map(renderForgeSignal).join("")}
       </div>
-      <button class="primary-button" type="button" disabled>Forge not unlocked yet</button>
+
+      ${renderLaunchSurfacePreview(product)}
     </section>
   `
 }
@@ -995,6 +1558,7 @@ function bindEvents() {
 
   document.querySelector("[data-action='edit']")?.addEventListener("click", editRoom)
   document.querySelector("[data-action='export']")?.addEventListener("click", exportWorkspace)
+  document.querySelector("[data-action='export-launch-surface']")?.addEventListener("click", exportLaunchSurface)
   document.querySelector("[data-action='reset']")?.addEventListener("click", resetDemo)
   document.querySelectorAll("[data-action='cancel-edit']").forEach((button) => {
     button.addEventListener("click", cancelEdit)
