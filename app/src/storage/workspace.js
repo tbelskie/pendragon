@@ -27,7 +27,10 @@ function mergeProduct(seedProduct, storedProduct = {}) {
     docsAssets: mergeItemsById(
       structuredClone(seedProduct.docsAssets ?? []),
       Array.isArray(storedProduct.docsAssets) ? storedProduct.docsAssets : []
-    )
+    ).map((asset) => ({
+      proofLink: "",
+      ...asset
+    }))
   }
 }
 

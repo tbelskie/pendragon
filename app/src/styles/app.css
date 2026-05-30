@@ -920,6 +920,13 @@ button {
   justify-content: space-between;
 }
 
+.doc-asset__meta {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .doc-asset__header h3 {
   font-size: 21px;
   line-height: 1.2;
@@ -973,10 +980,22 @@ button {
   white-space: nowrap;
 }
 
+.proof-link {
+  color: var(--ember);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.proof-link:hover {
+  text-decoration: underline;
+}
+
 .doc-asset__fields {
   display: grid;
   gap: 12px;
-  grid-template-columns: 150px minmax(240px, 1fr) minmax(180px, 0.8fr);
+  grid-template-columns: 150px minmax(220px, 1fr) minmax(180px, 0.8fr) minmax(180px, 0.8fr);
 }
 
 .doc-asset__fields label {
@@ -1149,6 +1168,10 @@ button {
   .gate-criterion div:first-child {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .doc-asset__meta {
+    align-items: flex-start;
   }
 
   .readiness-edit {

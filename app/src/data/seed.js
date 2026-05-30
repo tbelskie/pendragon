@@ -412,6 +412,7 @@ export const workspaceSeed = {
           priority: "High",
           purpose: "Keep Pendragon pointed at solo founders with real launch work.",
           nextStep: "Refine after Writing Quest dogfood proves the workflow.",
+          proofLink: "https://github.com/tbelskie/pendragon/blob/main/docs/architecture/README.md",
           evidence: "Architecture docs"
         },
         {
@@ -439,6 +440,7 @@ export const workspaceSeed = {
           priority: "High",
           purpose: "Explain why docs readiness is a launch primitive, not a content chore.",
           nextStep: "Publish v0.4 product plan and design note.",
+          proofLink: "https://github.com/tbelskie/pendragon/blob/main/docs/product/v0.4-docs-tracker-plan.md",
           evidence: ""
         },
         {

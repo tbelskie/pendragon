@@ -45,6 +45,11 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;")
 }
 
+function safeProofLink(value) {
+  const link = String(value ?? "").trim()
+  return /^https?:\/\//i.test(link) ? link : ""
+}
+
 function numberValue(value, fallback = 0) {
   const parsed = Number.parseInt(value, 10)
   return Number.isFinite(parsed) ? parsed : fallback
@@ -339,6 +344,7 @@ function saveDocsAssets(event) {
     ...asset,
     status: String(form.get(`doc-${asset.id}-status`) ?? asset.status),
     nextStep: String(form.get(`doc-${asset.id}-nextStep`) ?? "").trim(),
+    proofLink: String(form.get(`doc-${asset.id}-proofLink`) ?? "").trim(),
     evidence: String(form.get(`doc-${asset.id}-evidence`) ?? "").trim()
   }))
   const nextProduct = {
@@ -762,6 +768,8 @@ function renderDocsStatusOptions(currentStatus) {
 }
 
 function renderDocAsset(asset) {
+  const proofLink = safeProofLink(asset.proofLink)
+
   return `
     <article class="doc-asset doc-asset--${escapeHtml(asset.status)}">
       <div class="doc-asset__header">
@@ -769,7 +777,10 @@ function renderDocAsset(asset) {
           <span class="doc-chip doc-chip--${escapeHtml(asset.status)}">${escapeHtml(docsStatusLabels[asset.status] ?? asset.status)}</span>
           <h3>${escapeHtml(asset.title)}</h3>
         </div>
-        <span class="priority-pill">${escapeHtml(asset.priority)}</span>
+        <div class="doc-asset__meta">
+          <span class="priority-pill">${escapeHtml(asset.priority)}</span>
+          ${proofLink ? `<a class="proof-link" href="${escapeHtml(proofLink)}" rel="noreferrer" target="_blank">Open proof</a>` : ""}
+        </div>
       </div>
       <p>${escapeHtml(asset.purpose)}</p>
       <div class="doc-asset__fields">
@@ -783,9 +794,13 @@ function renderDocAsset(asset) {
           <span>Next move</span>
           <textarea id="doc-${escapeHtml(asset.id)}-nextStep" name="doc-${escapeHtml(asset.id)}-nextStep" rows="2">${escapeHtml(asset.nextStep)}</textarea>
         </label>
+        <label for="doc-${escapeHtml(asset.id)}-proofLink">
+          <span>Proof link</span>
+          <input id="doc-${escapeHtml(asset.id)}-proofLink" name="doc-${escapeHtml(asset.id)}-proofLink" inputmode="url" value="${escapeHtml(asset.proofLink)}" placeholder="https://docs.google.com/..." />
+        </label>
         <label for="doc-${escapeHtml(asset.id)}-evidence">
-          <span>Evidence</span>
-          <input id="doc-${escapeHtml(asset.id)}-evidence" name="doc-${escapeHtml(asset.id)}-evidence" value="${escapeHtml(asset.evidence)}" placeholder="Draft, URL, repo note, or decision" />
+          <span>Evidence note</span>
+          <input id="doc-${escapeHtml(asset.id)}-evidence" name="doc-${escapeHtml(asset.id)}-evidence" value="${escapeHtml(asset.evidence)}" placeholder="Draft, repo note, or decision" />
         </label>
       </div>
     </article>
