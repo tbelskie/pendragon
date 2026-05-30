@@ -1234,6 +1234,161 @@ button {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.launch-qa {
+  background:
+    linear-gradient(180deg, rgba(255, 92, 30, 0.075), rgba(255,255,255,0.018));
+  border: 1px solid rgba(255, 92, 30, 0.22);
+  border-radius: 8px;
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+}
+
+.launch-qa--blocked {
+  border-color: rgba(255, 92, 30, 0.34);
+}
+
+.launch-qa--at-risk {
+  border-color: rgba(117, 167, 255, 0.32);
+}
+
+.launch-qa--ready {
+  border-color: rgba(91, 207, 132, 0.34);
+}
+
+.launch-qa__hero {
+  align-items: start;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) 170px;
+}
+
+.launch-qa__hero h2 {
+  font-size: 28px;
+  line-height: 1.1;
+  margin: 8px 0;
+}
+
+.launch-qa__hero p:not(.eyebrow) {
+  color: var(--muted);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.launch-qa__score {
+  background: rgba(255,255,255,0.045);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  display: grid;
+  gap: 5px;
+  padding: 16px;
+}
+
+.launch-qa__score span {
+  color: var(--ember);
+  font-size: 38px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.launch-qa__score strong {
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.launch-qa__score small {
+  color: var(--muted);
+}
+
+.launch-qa__checks {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.launch-qa-check {
+  background: rgba(255,255,255,0.035);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 46px minmax(0, 1fr);
+  padding: 12px;
+}
+
+.launch-qa-check > span {
+  align-items: center;
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 900;
+  height: 28px;
+  justify-content: center;
+  text-transform: uppercase;
+}
+
+.launch-qa-check--ready > span {
+  border-color: rgba(91, 207, 132, 0.28);
+  color: var(--green);
+}
+
+.launch-qa-check--blocked > span {
+  border-color: rgba(255, 92, 30, 0.3);
+  color: var(--ember);
+}
+
+.launch-qa-check strong {
+  display: block;
+  line-height: 1.2;
+}
+
+.launch-qa-check p {
+  color: var(--muted);
+  line-height: 1.35;
+  margin: 4px 0 0;
+}
+
+.launch-qa__blockers {
+  align-items: center;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px;
+}
+
+.launch-qa__blockers > span {
+  color: var(--ember);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.launch-qa__blockers ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.launch-qa__blockers li {
+  background: rgba(255,255,255,0.055);
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  padding: 6px 9px;
+}
+
 .launch-preview {
   display: grid;
   gap: 18px;
@@ -1661,6 +1816,8 @@ button {
   .forge-readiness,
   .forge-strategy,
   .forge-controls-form__row,
+  .launch-qa__hero,
+  .launch-qa__checks,
   .evidence-command,
   .evidence-grid,
   .evidence-card,

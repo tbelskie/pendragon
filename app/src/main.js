@@ -234,6 +234,84 @@ function launchSurfaceControls(product, template) {
   }
 }
 
+function launchSurfaceQa(product, surface) {
+  const proofCount = surface.proofAssets.length + surface.evidence.forgeSources.length
+  const criticalOpen = surface.gate.docs.assets.filter((asset) => asset.priority === "Critical" && asset.status !== "ready")
+  const checks = [
+    {
+      detail: surface.controls.offer
+        ? "The offer is explicit enough for a visitor to understand what is being offered."
+        : "Add the exact offer before sharing the surface.",
+      label: "Offer",
+      passed: Boolean(surface.controls.offer)
+    },
+    {
+      detail: surface.controls.ctaLabel && surface.controls.ctaUrl
+        ? "The CTA has a label and a destination."
+        : "Add a CTA URL before using this as a public launch page.",
+      label: "CTA",
+      passed: Boolean(surface.controls.ctaLabel && surface.controls.ctaUrl)
+    },
+    {
+      detail: proofCount
+        ? `${proofCount} proof link${proofCount === 1 ? "" : "s"} attached to the launch surface.`
+        : "Attach at least one proof link through Evidence or Docs.",
+      label: "Proof",
+      passed: proofCount > 0
+    },
+    {
+      detail: surface.controls.trustClaim
+        ? "The page states an explicit trust claim."
+        : "Add the most honest trust claim you can make today.",
+      label: "Trust claim",
+      passed: Boolean(surface.controls.trustClaim)
+    },
+    {
+      detail: surface.supportReady || surface.controls.supportUrl
+        ? "The surface has a support path or support asset."
+        : "Add a support URL or ready support docs asset before inviting users.",
+      label: "Support path",
+      passed: Boolean(surface.supportReady || surface.controls.supportUrl)
+    },
+    {
+      detail: criticalOpen.length
+        ? `${criticalOpen.length} critical launch docs asset${criticalOpen.length === 1 ? "" : "s"} still open.`
+        : "No critical docs assets are open.",
+      label: "Critical docs",
+      passed: criticalOpen.length === 0
+    },
+    {
+      detail: surface.gate.level === "ready"
+        ? "The readiness gate is clear."
+        : `Gate verdict is still ${surface.gate.verdict}.`,
+      label: "Readiness gate",
+      passed: surface.gate.level === "ready"
+    }
+  ]
+  const passed = checks.filter((check) => check.passed).length
+  const score = Math.round((passed / checks.length) * 100)
+  const blockers = checks.filter((check) => !check.passed)
+  const level = blockers.length >= 3 ? "blocked" : blockers.length ? "at-risk" : "ready"
+  const verdict = level === "ready"
+    ? "Shareable draft"
+    : level === "at-risk"
+      ? "Share with caution"
+      : "Not ready to share"
+  const summary = level === "ready"
+    ? `${product.name} has the basics needed for a public launch surface.`
+    : `${product.name} still has ${blockers.length} publishability gap${blockers.length === 1 ? "" : "s"} before this should go wide.`
+
+  return {
+    blockers,
+    checks,
+    level,
+    passed,
+    score,
+    summary,
+    verdict
+  }
+}
+
 function readinessSection(product, name) {
   return product.readiness?.find((section) => section.name === name) ?? { name, done: 0, total: 1 }
 }
@@ -383,7 +461,7 @@ function launchSurfaceModel(product) {
     }))
   ].slice(0, 6)
 
-  return {
+  const surface = {
     audience: fallbackText(product.user, "Early users who need the clearest possible product promise."),
     evidence,
     gate,
@@ -406,6 +484,11 @@ function launchSurfaceModel(product) {
     template,
     targetDate: fallbackText(product.targetDate, "Target date not set"),
     trustAssets
+  }
+
+  return {
+    ...surface,
+    qa: launchSurfaceQa(product, surface)
   }
 }
 
@@ -1512,6 +1595,53 @@ function renderForgeControls(product, surface) {
   `
 }
 
+function renderLaunchQaCheck(check) {
+  const status = check.passed ? "Pass" : "Fix"
+  const modifier = check.passed ? "ready" : "blocked"
+
+  return `
+    <li class="launch-qa-check launch-qa-check--${modifier}">
+      <span>${status}</span>
+      <div>
+        <strong>${escapeHtml(check.label)}</strong>
+        <p>${escapeHtml(check.detail)}</p>
+      </div>
+    </li>
+  `
+}
+
+function renderLaunchSurfaceQa(surface) {
+  const blockerItems = surface.qa.blockers.length
+    ? surface.qa.blockers.map((blocker) => `<li>${escapeHtml(blocker.label)}</li>`).join("")
+    : "<li>No publishability blockers surfaced.</li>"
+
+  return `
+    <article class="launch-qa launch-qa--${escapeHtml(surface.qa.level)}">
+      <div class="launch-qa__hero">
+        <div>
+          <p class="eyebrow">Launch Surface QA</p>
+          <h2>${escapeHtml(surface.qa.verdict)}</h2>
+          <p>${escapeHtml(surface.qa.summary)}</p>
+        </div>
+        <aside class="launch-qa__score">
+          <span>${surface.qa.score}%</span>
+          <strong>${surface.qa.passed}/${surface.qa.checks.length} checks</strong>
+          <small>Publishability score</small>
+        </aside>
+      </div>
+      <ul class="launch-qa__checks">
+        ${surface.qa.checks.map(renderLaunchQaCheck).join("")}
+      </ul>
+      <div class="launch-qa__blockers">
+        <span>Clear First</span>
+        <ul>
+          ${blockerItems}
+        </ul>
+      </div>
+    </article>
+  `
+}
+
 function renderLaunchSurfacePreview(product) {
   const surface = launchSurfaceModel(product)
   const proofItems = [
@@ -1765,6 +1895,13 @@ function buildLaunchSurfaceHtml(product) {
   const questionItems = surface.questions
     .map((question, index) => `<li><span>${index + 1}</span>${escapeHtml(question)}</li>`)
     .join("")
+  const qaItems = surface.qa.checks.map((check) => `
+      <li class="${check.passed ? "passed" : "blocked"}">
+        <span>${check.passed ? "Pass" : "Fix"}</span>
+        <strong>${escapeHtml(check.label)}</strong>
+        <p>${escapeHtml(check.detail)}</p>
+      </li>
+    `).join("")
   const ctaLink = surface.controls.ctaUrl
     ? `<a class="cta-link" href="${escapeHtml(surface.controls.ctaUrl)}" rel="noreferrer" target="_blank">${escapeHtml(surface.controls.ctaLabel)}</a>`
     : `<p>${escapeHtml(surface.template.ctaDetail)}</p>`
@@ -1887,6 +2024,7 @@ function buildLaunchSurfaceHtml(product) {
       .actions li,
       .gaps li,
       .questions li,
+      .qa li,
       .trust li {
         background: rgba(255,255,255,0.035);
         border: 1px solid var(--line);
@@ -1899,6 +2037,7 @@ function buildLaunchSurfaceHtml(product) {
       .gaps span,
       .actions span,
       .questions span,
+      .qa span,
       .trust span,
       .cta span {
         color: var(--ember);
@@ -1964,6 +2103,7 @@ function buildLaunchSurfaceHtml(product) {
       .gaps,
       .actions,
       .questions,
+      .qa,
       .trust {
         display: grid;
         gap: 10px;
@@ -1977,12 +2117,25 @@ function buildLaunchSurfaceHtml(product) {
         font-size: 13px;
       }
 
+      .qa {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .qa li.passed span {
+        color: var(--green);
+      }
+
+      .qa li.blocked span {
+        color: var(--ember);
+      }
+
       @media (max-width: 780px) {
         .hero,
         .facts,
         .copy,
         .grid,
-        .cta {
+        .cta,
+        .qa {
           grid-template-columns: 1fr;
         }
 
@@ -2015,6 +2168,15 @@ function buildLaunchSurfaceHtml(product) {
         <span><strong>Audience</strong>${escapeHtml(surface.audience)}</span>
         <span><strong>Surface</strong>${escapeHtml(surface.template.label)}</span>
         <span><strong>Milestone</strong>${escapeHtml(surface.milestone)}</span>
+      </section>
+
+      <section class="section">
+        <p class="eyebrow">Launch Surface QA</p>
+        <h2>${escapeHtml(surface.qa.verdict)} (${surface.qa.score}%)</h2>
+        <p>${escapeHtml(surface.qa.summary)}</p>
+        <ul class="qa">
+          ${qaItems}
+        </ul>
       </section>
 
       <section class="cta">
@@ -2152,6 +2314,8 @@ function renderForge(product) {
       ${renderForgeStrategy(surface)}
 
       ${renderForgeControls(product, surface)}
+
+      ${renderLaunchSurfaceQa(surface)}
 
       ${renderLaunchSurfacePreview(product)}
     </section>

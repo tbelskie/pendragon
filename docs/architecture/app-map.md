@@ -165,6 +165,16 @@ In v0.9, Forge adds Launch Surface Controls:
 
 These controls keep Forge editable without turning it into a full page builder.
 
+In v0.10, Forge adds Launch Surface QA:
+
+- publishability score
+- shareable, caution, or blocked verdict
+- seven checks for offer, CTA, proof, trust, support, critical docs, and readiness
+- clear-first blockers
+- matching QA section in exported HTML
+
+This keeps the launch surface honest before a founder shares it.
+
 The core job:
 
 > Build a launch site from the product room.
