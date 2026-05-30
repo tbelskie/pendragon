@@ -198,6 +198,18 @@ In v0.12, Forge adds Manual Publish Path:
 
 This makes the generated surface publishable by hand before Pendragon automates deployments.
 
+In v0.13, Forge adds Launch Surface History:
+
+- local launch surface snapshots
+- current-vs-latest comparison
+- QA score delta
+- blocker delta
+- proof-link delta
+- docs-ready delta
+- latest snapshot trail
+
+This turns generated launch surfaces into saved launch artifacts.
+
 The core job:
 
 > Build a launch site from the product room.

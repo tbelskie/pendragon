@@ -44,7 +44,10 @@ function mergeProduct(seedProduct, storedProduct = {}) {
       type: "doc",
       url: "",
       ...source
-    }))
+    })),
+    launchSnapshots: Array.isArray(storedProduct.launchSnapshots)
+      ? storedProduct.launchSnapshots
+      : structuredClone(seedProduct.launchSnapshots ?? [])
   }
 }
 

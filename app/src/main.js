@@ -111,6 +111,10 @@ function productEvidenceSources(product) {
   return Array.isArray(product.evidenceSources) ? product.evidenceSources : []
 }
 
+function productLaunchSnapshots(product) {
+  return Array.isArray(product.launchSnapshots) ? product.launchSnapshots : []
+}
+
 function docsStats(product) {
   const assets = productDocsAssets(product)
   const ready = assets.filter((asset) => asset.status === "ready").length
@@ -441,6 +445,67 @@ function launchPublishPath(surface, qa) {
     steps,
     summary,
     verdict
+  }
+}
+
+function launchSnapshotFromSurface(surface) {
+  const proofCount = surface.proofAssets.length + surface.evidence.forgeSources.length
+
+  return {
+    blockers: surface.qa.blockers.map((blocker) => blocker.label),
+    createdAt: new Date().toISOString(),
+    ctaLabel: surface.controls.ctaLabel,
+    ctaReady: Boolean(surface.controls.ctaUrl),
+    docsReady: surface.gate.docs.ready,
+    docsTotal: surface.gate.docs.assets.length,
+    gateScore: surface.gate.gateScore,
+    gateVerdict: surface.gate.verdict,
+    id: `snapshot-${Date.now()}`,
+    offer: surface.controls.offer || surface.pricing,
+    oneLiner: surface.oneLiner,
+    proofCount,
+    publishFolder: surface.publishPath.folder,
+    qaLevel: surface.qa.level,
+    qaScore: surface.qa.score,
+    qaVerdict: surface.qa.verdict,
+    stageLabel: surface.stageLabel,
+    surfaceLabel: surface.template.label,
+    targetDate: surface.targetDate
+  }
+}
+
+function compareSnapshots(current, previous) {
+  if (!previous) {
+    return {
+      blockersDelta: 0,
+      docsDelta: 0,
+      proofDelta: 0,
+      scoreDelta: 0,
+      summary: "No previous snapshot yet.",
+      tone: "neutral"
+    }
+  }
+
+  const scoreDelta = current.qaScore - previous.qaScore
+  const blockersDelta = current.blockers.length - previous.blockers.length
+  const proofDelta = current.proofCount - previous.proofCount
+  const docsDelta = current.docsReady - previous.docsReady
+  const improved = scoreDelta > 0 || blockersDelta < 0 || proofDelta > 0 || docsDelta > 0
+  const regressed = scoreDelta < 0 || blockersDelta > 0
+  const tone = improved && !regressed ? "improved" : regressed ? "regressed" : "neutral"
+  const summary = tone === "improved"
+    ? "The current surface is stronger than the latest saved snapshot."
+    : tone === "regressed"
+      ? "The current surface has drifted backward against the latest saved snapshot."
+      : "The current surface is roughly unchanged from the latest saved snapshot."
+
+  return {
+    blockersDelta,
+    docsDelta,
+    proofDelta,
+    scoreDelta,
+    summary,
+    tone
   }
 }
 
@@ -874,6 +939,25 @@ function saveForgeControls(event) {
     hasUnsavedFormChanges = false
   } catch {
     errorMessage = "Could not save the Forge controls locally. Keep this tab open and try again."
+  }
+
+  render()
+}
+
+function saveLaunchSurfaceSnapshot() {
+  const product = activeProduct()
+  const surface = launchSurfaceModel(product)
+  const snapshot = launchSnapshotFromSurface(surface)
+  const snapshots = [snapshot, ...productLaunchSnapshots(product)].slice(0, 10)
+  const nextProduct = {
+    ...product,
+    launchSnapshots: snapshots
+  }
+
+  try {
+    commitWorkspace(workspaceWithActiveProduct(nextProduct), `Launch surface snapshot saved at ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`)
+  } catch {
+    errorMessage = "Could not save the launch surface snapshot locally. Keep this tab open and try again."
   }
 
   render()
@@ -2076,6 +2160,90 @@ function renderManualPublishPath(surface) {
   `
 }
 
+function formatSnapshotDate(value) {
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) return "Unknown time"
+
+  return date.toLocaleString([], {
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    month: "short"
+  })
+}
+
+function formatDelta(value, suffix = "") {
+  if (!value) return `0${suffix}`
+  return `${value > 0 ? "+" : ""}${value}${suffix}`
+}
+
+function renderHistoryMetric(label, value, detail) {
+  return `
+    <span>
+      <strong>${escapeHtml(label)}</strong>
+      ${escapeHtml(value)}
+      <small>${escapeHtml(detail)}</small>
+    </span>
+  `
+}
+
+function renderSnapshotItem(snapshot, index) {
+  const blockers = snapshot.blockers.length ? snapshot.blockers.join(", ") : "No blockers"
+
+  return `
+    <li>
+      <div>
+        <span>${escapeHtml(index === 0 ? "Latest" : `Snapshot ${index + 1}`)}</span>
+        <strong>${escapeHtml(snapshot.qaVerdict)} / ${snapshot.qaScore}%</strong>
+        <p>${escapeHtml(formatSnapshotDate(snapshot.createdAt))} - ${escapeHtml(snapshot.surfaceLabel)} - ${escapeHtml(snapshot.publishFolder)}/</p>
+      </div>
+      <small>${escapeHtml(blockers)}</small>
+    </li>
+  `
+}
+
+function renderLaunchSurfaceHistory(product, surface) {
+  const snapshots = productLaunchSnapshots(product)
+  const currentSnapshot = launchSnapshotFromSurface(surface)
+  const latestSnapshot = snapshots[0]
+  const comparison = compareSnapshots(currentSnapshot, latestSnapshot)
+  const snapshotList = snapshots.length
+    ? snapshots.map(renderSnapshotItem).join("")
+    : `
+      <li>
+        <div>
+          <span>Empty</span>
+          <strong>No saved launch surface snapshots yet.</strong>
+          <p>Save the current surface before you change the offer, CTA, docs, or gate posture.</p>
+        </div>
+        <small>Local only</small>
+      </li>
+    `
+
+  return `
+    <article class="surface-history surface-history--${escapeHtml(comparison.tone)}">
+      <div class="surface-history__hero">
+        <div>
+          <p class="eyebrow">Launch Surface History</p>
+          <h2>Keep a trail of the launch surface as it changes.</h2>
+          <p>${escapeHtml(comparison.summary)}</p>
+        </div>
+        <button class="primary-button" type="button" data-action="save-surface-snapshot">Save Snapshot</button>
+      </div>
+      <div class="surface-history__metrics">
+        ${renderHistoryMetric("QA score", `${currentSnapshot.qaScore}%`, `${formatDelta(comparison.scoreDelta, "%")} vs latest`)}
+        ${renderHistoryMetric("Blockers", `${currentSnapshot.blockers.length}`, `${formatDelta(comparison.blockersDelta)} vs latest`)}
+        ${renderHistoryMetric("Proof links", `${currentSnapshot.proofCount}`, `${formatDelta(comparison.proofDelta)} vs latest`)}
+        ${renderHistoryMetric("Docs ready", `${currentSnapshot.docsReady}/${currentSnapshot.docsTotal}`, `${formatDelta(comparison.docsDelta)} vs latest`)}
+      </div>
+      <ul class="surface-history__list">
+        ${snapshotList}
+      </ul>
+    </article>
+  `
+}
+
 function renderLaunchSurfacePreview(product) {
   const surface = launchSurfaceModel(product)
   const proofItems = [
@@ -2756,6 +2924,8 @@ function renderForge(product) {
 
       ${renderManualPublishPath(surface)}
 
+      ${renderLaunchSurfaceHistory(product, surface)}
+
       ${renderLaunchSurfacePreview(product)}
     </section>
   `
@@ -2788,6 +2958,7 @@ function bindEvents() {
   document.querySelectorAll("[data-action='export-publish-guide']").forEach((button) => {
     button.addEventListener("click", exportLaunchPublishGuide)
   })
+  document.querySelector("[data-action='save-surface-snapshot']")?.addEventListener("click", saveLaunchSurfaceSnapshot)
   document.querySelector("[data-action='reset']")?.addEventListener("click", resetDemo)
   document.querySelectorAll("[data-share-copy]").forEach((button) => {
     button.addEventListener("click", () => copySharePackageItem(button.dataset.shareCopy))
