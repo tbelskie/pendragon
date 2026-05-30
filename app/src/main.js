@@ -13,6 +13,7 @@ const views = [
   { id: "brief", label: "Brief" },
   { id: "decisions", label: "Decisions" },
   { id: "docs", label: "Docs" },
+  { id: "gate", label: "Gate" },
   { id: "forge", label: "Forge" }
 ]
 
@@ -69,6 +70,127 @@ function docsStats(product) {
   const percent = assets.length ? Math.round((ready / assets.length) * 100) : 0
 
   return { assets, ready, drafting, blocked, missing, criticalOpen, percent }
+}
+
+function readinessSection(product, name) {
+  return product.readiness?.find((section) => section.name === name) ?? { name, done: 0, total: 1 }
+}
+
+function readinessSectionPercent(product, name) {
+  const section = readinessSection(product, name)
+  return Math.round((section.done / Math.max(1, section.total)) * 100)
+}
+
+function unresolvedDecisions(product) {
+  return (product.decisions ?? []).filter((decision) => decision.status !== "chosen")
+}
+
+function supportAssetIsReady(product) {
+  return productDocsAssets(product).some((asset) => (
+    asset.status === "ready" && /support|feedback/i.test(`${asset.title} ${asset.id}`)
+  ))
+}
+
+function gateStatus(product) {
+  const docs = docsStats(product)
+  const readiness = readinessPercent(product)
+  const build = readinessSectionPercent(product, "Build")
+  const trust = readinessSectionPercent(product, "Trust")
+  const launch = readinessSectionPercent(product, "Launch")
+  const revenue = readinessSectionPercent(product, "Revenue")
+  const unresolved = unresolvedDecisions(product)
+  const criticalDocs = docs.assets.filter((asset) => asset.priority === "Critical" && asset.status !== "ready")
+  const blockedDocs = docs.assets.filter((asset) => asset.status === "blocked")
+  const gateScore = Math.round((readiness + docs.percent + build + trust + launch + revenue) / 6)
+  const criteria = [
+    {
+      title: "Critical launch docs",
+      status: criticalDocs.length ? "blocked" : "ready",
+      detail: criticalDocs.length
+        ? `${criticalDocs.length} critical docs asset${criticalDocs.length === 1 ? "" : "s"} still open.`
+        : "Critical docs are ready.",
+      next: criticalDocs[0]?.nextStep ?? "Keep launch docs current."
+    },
+    {
+      title: "Decision ledger",
+      status: unresolved.length ? "blocked" : "ready",
+      detail: unresolved.length
+        ? `${unresolved.length} decision${unresolved.length === 1 ? "" : "s"} still need a chosen path.`
+        : "No unresolved launch decisions.",
+      next: unresolved[0]?.title ?? "Capture new launch decisions when they appear."
+    },
+    {
+      title: "Trust proof",
+      status: trust < 70 || blockedDocs.length ? "blocked" : trust < 85 ? "at-risk" : "ready",
+      detail: blockedDocs.length
+        ? `${blockedDocs.length} docs asset${blockedDocs.length === 1 ? "" : "s"} blocked, including trust-sensitive work.`
+        : `Trust readiness is ${trust}%.`,
+      next: blockedDocs[0]?.nextStep ?? "Raise Trust readiness above 70% before taking payment."
+    },
+    {
+      title: "Build stability",
+      status: build < 70 ? "at-risk" : "ready",
+      detail: `Build readiness is ${build}%.`,
+      next: build < 70 ? "Clear build blockers before expanding beta access." : "Keep beta build notes current."
+    },
+    {
+      title: "Launch surface",
+      status: launch < 60 || docs.percent < 50 ? "at-risk" : "ready",
+      detail: `Launch readiness is ${launch}% and docs readiness is ${docs.percent}%.`,
+      next: "Push the landing page, beta instructions, FAQ, and trust story toward ready."
+    },
+    {
+      title: "Revenue path",
+      status: revenue < 40 ? "at-risk" : "ready",
+      detail: `Revenue readiness is ${revenue}%.`,
+      next: revenue < 40 ? "Decide the paid beta price and purchase path." : "Keep pricing evidence attached to the launch room."
+    },
+    {
+      title: "Support loop",
+      status: supportAssetIsReady(product) ? "ready" : "at-risk",
+      detail: supportAssetIsReady(product)
+        ? "Support and feedback path is ready."
+        : "Support path is not ready yet.",
+      next: "Give beta users one obvious way to report bugs and confusion."
+    }
+  ]
+  const blockers = criteria.filter((item) => item.status === "blocked")
+  const risks = criteria.filter((item) => item.status === "at-risk")
+  const level = blockers.length ? "blocked" : risks.length ? "at-risk" : "ready"
+  const betaLabel = product.stage === "beta" ? "paid beta" : "launch"
+  const verdict = level === "ready"
+    ? `Ready for ${betaLabel}`
+    : level === "at-risk"
+      ? `${betaLabel} at risk`
+      : `${betaLabel} blocked`
+  const summary = level === "ready"
+    ? `${product.name} has enough proof to move forward.`
+    : level === "at-risk"
+      ? `${product.name} can keep preparing, but ${risks.length} risk${risks.length === 1 ? "" : "s"} need attention.`
+      : `${product.name} has ${blockers.length} blocker${blockers.length === 1 ? "" : "s"} before ${betaLabel}.`
+  const nextMoves = [
+    ...blockers.map((item) => item.next),
+    ...risks.map((item) => item.next)
+  ].filter(Boolean).slice(0, 5)
+
+  return {
+    betaLabel,
+    blockers,
+    build,
+    criteria,
+    docs,
+    gateScore,
+    launch,
+    level,
+    nextMoves,
+    readiness,
+    revenue,
+    risks,
+    summary,
+    trust,
+    unresolved,
+    verdict
+  }
 }
 
 function syncDocsReadiness(product, docsAssets) {
@@ -715,6 +837,100 @@ function renderDocs(product) {
   `
 }
 
+function renderGateCriterion(criterion) {
+  return `
+    <article class="gate-criterion gate-criterion--${escapeHtml(criterion.status)}">
+      <div>
+        <span class="gate-chip gate-chip--${escapeHtml(criterion.status)}">${escapeHtml(criterion.status === "at-risk" ? "At risk" : criterion.status)}</span>
+        <h3>${escapeHtml(criterion.title)}</h3>
+      </div>
+      <p>${escapeHtml(criterion.detail)}</p>
+      <small>${escapeHtml(criterion.next)}</small>
+    </article>
+  `
+}
+
+function renderGateMetric(label, value, note) {
+  return `
+    <article>
+      <strong>${escapeHtml(value)}</strong>
+      <span>${escapeHtml(label)}</span>
+      <small>${escapeHtml(note)}</small>
+    </article>
+  `
+}
+
+function renderGate(product) {
+  const gate = gateStatus(product)
+  const nextMoves = gate.nextMoves.length
+    ? gate.nextMoves.map((move, index) => `
+      <li>
+        <span>${index + 1}</span>
+        <p>${escapeHtml(move)}</p>
+      </li>
+    `).join("")
+    : `
+      <li>
+        <span>1</span>
+        <p>Keep shipping and capture the next launch risk when it appears.</p>
+      </li>
+    `
+
+  return `
+    <section class="launch-surface gate-surface">
+      <article class="gate-hero gate-hero--${escapeHtml(gate.level)}">
+        <div>
+          <p class="eyebrow">Beta Readiness Gate</p>
+          <h2>${escapeHtml(gate.verdict)}</h2>
+          <p>${escapeHtml(gate.summary)}</p>
+        </div>
+        <div class="gate-verdict">
+          <span>${gate.gateScore}%</span>
+          <strong>Gate score</strong>
+          <small>${gate.blockers.length} blockers / ${gate.risks.length} risks</small>
+        </div>
+      </article>
+
+      <div class="gate-metrics">
+        ${renderGateMetric("Overall readiness", `${gate.readiness}%`, "Room score")}
+        ${renderGateMetric("Build", `${gate.build}%`, "Beta stability")}
+        ${renderGateMetric("Trust", `${gate.trust}%`, "User confidence")}
+        ${renderGateMetric("Docs", `${gate.docs.percent}%`, `${gate.docs.ready}/${gate.docs.assets.length} ready`)}
+        ${renderGateMetric("Decisions", `${gate.unresolved.length}`, "Unresolved")}
+      </div>
+
+      <div class="gate-grid">
+        <section class="gate-panel">
+          <div class="surface-heading">
+            <div>
+              <p class="eyebrow">Gate Criteria</p>
+              <h2>What must be true before ${escapeHtml(gate.betaLabel)}?</h2>
+            </div>
+          </div>
+          <div class="gate-criteria">
+            ${gate.criteria.map(renderGateCriterion).join("")}
+          </div>
+        </section>
+
+        <aside class="gate-panel gate-next">
+          <div>
+            <p class="eyebrow">Next Moves</p>
+            <h2>Clear these first.</h2>
+          </div>
+          <ol class="actions">
+            ${nextMoves}
+          </ol>
+          <div class="gate-actions">
+            <button class="quiet-button" type="button" data-view="docs">Open Docs</button>
+            <button class="quiet-button" type="button" data-view="decisions">Open Decisions</button>
+            <button class="quiet-button" type="button" data-view="warroom">Open Warroom</button>
+          </div>
+        </aside>
+      </div>
+    </section>
+  `
+}
+
 function renderForge(product) {
   const brief = product.brief ?? {}
   const stats = docsStats(product)
@@ -749,6 +965,7 @@ function renderActiveView(product) {
   if (activeView === "brief") return renderBrief(product)
   if (activeView === "decisions") return renderDecisions(product)
   if (activeView === "docs") return renderDocs(product)
+  if (activeView === "gate") return renderGate(product)
   if (activeView === "forge") return renderForge(product)
   return renderWarroom(product)
 }
