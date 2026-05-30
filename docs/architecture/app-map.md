@@ -187,6 +187,17 @@ In v0.11, Forge adds Launch Share Package:
 
 This gives the founder an outbound packet generated from the same room as the launch surface.
 
+In v0.12, Forge adds Manual Publish Path:
+
+- suggested static folder
+- expected `index.html` location
+- placeholder GitHub Pages URL pattern
+- manual publish steps
+- CTA and QA blockers
+- Markdown publish guide export
+
+This makes the generated surface publishable by hand before Pendragon automates deployments.
+
 The core job:
 
 > Build a launch site from the product room.
