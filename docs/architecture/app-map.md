@@ -94,6 +94,14 @@ In v0.17, Portfolio adds the Clear First command queue:
 - direct routing into the module where the work lives
 - product cards show their top Clear First item
 
+In v0.18, Clear First gains local state:
+
+- stable generated item keys
+- founder notes
+- resolved and reopened state
+- recently resolved queue section
+- local persistence per product room
+
 The portfolio view should answer:
 
 > Which product needs my attention next?
