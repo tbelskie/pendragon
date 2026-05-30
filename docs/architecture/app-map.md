@@ -79,6 +79,18 @@ For internal dogfooding, seed:
 
 Locally-created products are appended to the portfolio and stored in browser local storage.
 
+In v0.16, Portfolio becomes the command center above the product rooms:
+
+- recommended focus product
+- attention score based on readiness, gates, docs, proof, decisions, and stage mismatch
+- portfolio health metrics
+- ranked product cards
+- direct routing into Warroom, Setup, and Forge
+
+The portfolio view should answer:
+
+> Which product needs my attention next?
+
 ### Product Warroom
 
 The main screen.
