@@ -23,26 +23,35 @@ Pendragon v0.1 should be small enough to build quickly and real enough to dogfoo
 
 ### Setup
 
-Creates the first product room.
+Routes the product room from founder answers and product signals.
 
 Inputs:
 
 - product name
-- stage
-- one-liner
-- user
-- current milestone
+- product type
+- business model
+- current goal
+- inferred or overridden stage
 - target date
-- repo URL
-- biggest worry
+- source link
+- working prototype signal
+- repo/source signal
+- user access signal
+- charging signal
+- traction or proof note
+- current focus
 
 Output:
 
-- product brief
-- current focus
-- readiness checklist
-- decision needed
-- top risk
+- stage diagnosis
+- setup signal score
+- missing assets
+- room module mix
+- readiness bias
+- recommended next action stack
+- default Forge surface type
+
+In v0.14, Setup becomes an editable tab for the active product rather than a one-time onboarding screen.
 
 ### Portfolio
 
@@ -210,6 +219,16 @@ In v0.13, Forge adds Launch Surface History:
 
 This turns generated launch surfaces into saved launch artifacts.
 
+In v0.14, Forge consumes the expanded stage model:
+
+- idea products generate validation pages
+- prototype products generate prototype validation pages
+- beta products generate beta pages
+- launch products generate paid launch pages
+- shipped, stalled, relaunch, and growth products generate relaunch or review surfaces
+
+The stage engine lives before Forge. Forge should not guess the founder's situation from vibes.
+
 The core job:
 
 > Build a launch site from the product room.
@@ -223,6 +242,7 @@ Stores launch and weekly retrospectives.
 Keep the shell minimal:
 
 - Portfolio
+- Setup
 - Warroom
 - Decisions
 - Docs

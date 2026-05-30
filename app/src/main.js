@@ -1,5 +1,13 @@
 import { loadWorkspace, resetWorkspace, saveWorkspace } from "./storage/workspace.js"
-import { readinessPercent, stageJobs, stageLabels } from "./domain/stages.js"
+import {
+  inferStageFromProfile,
+  readinessPercent,
+  setupOptions,
+  stageDefinition,
+  stageEngineResult,
+  stageJobs,
+  stageLabels
+} from "./domain/stages.js"
 
 let workspace = loadWorkspace()
 let activeView = "warroom"
@@ -9,6 +17,7 @@ let statusMessage = "Local-only workspace"
 let errorMessage = ""
 
 const views = [
+  { id: "setup", label: "Setup" },
   { id: "warroom", label: "Warroom" },
   { id: "brief", label: "Brief" },
   { id: "decisions", label: "Decisions" },
@@ -103,6 +112,14 @@ function normalizeReadiness(doneValue, totalValue) {
   return { done, total }
 }
 
+function renderOptions(options, currentValue) {
+  return Object.entries(options)
+    .map(([value, label]) => `
+      <option value="${escapeHtml(value)}" ${value === currentValue ? "selected" : ""}>${escapeHtml(label)}</option>
+    `)
+    .join("")
+}
+
 function productDocsAssets(product) {
   return Array.isArray(product.docsAssets) ? product.docsAssets : []
 }
@@ -147,6 +164,34 @@ function docsPriorityRank(priority) {
 }
 
 function surfaceTemplateForProduct(product) {
+  if (product.stage === "idea") {
+    return {
+      ctaDetail: "Use this CTA to collect proof before the founder spends more build energy.",
+      goal: "Validate the promise, audience, and problem before the product hardens.",
+      id: "validation",
+      label: "Validation page",
+      offerLabel: "Validation offer",
+      primaryCta: "Join the validation sprint",
+      proofLabel: "Problem proof",
+      questionLabel: "Validation questions",
+      risk: "The page has to learn whether anyone wants the promise badly enough to keep going."
+    }
+  }
+
+  if (product.stage === "prototype") {
+    return {
+      ctaDetail: "Use this CTA to recruit early evaluators before pretending the product is broadly ready.",
+      goal: "Turn a working prototype into a focused early-user test.",
+      id: "prototype-validation",
+      label: "Prototype validation page",
+      offerLabel: "Prototype offer",
+      primaryCta: "Try the prototype",
+      proofLabel: "Prototype proof",
+      questionLabel: "Prototype questions",
+      risk: "The founder has to prove the MVP is useful without overpromising completeness."
+    }
+  }
+
   if (product.stage === "beta") {
     return {
       ctaDetail: "Use this CTA only when the trust story, install path, and support loop are honest enough for paid early access.",
@@ -161,7 +206,21 @@ function surfaceTemplateForProduct(product) {
     }
   }
 
-  if (product.stage === "growth") {
+  if (product.stage === "launch") {
+    return {
+      ctaDetail: "Use this CTA when the offer, pricing, and support path are explicit enough for public traffic.",
+      goal: "Convert launch attention into the first credible customer action.",
+      id: "paid-launch",
+      label: "Paid launch page",
+      offerLabel: "Launch offer",
+      primaryCta: "Buy now",
+      proofLabel: "Launch proof",
+      questionLabel: "Buyer questions",
+      risk: "A visitor has to understand why the product is worth paying for now."
+    }
+  }
+
+  if (["shipped", "stalled", "relaunch", "growth"].includes(product.stage)) {
     return {
       ctaDetail: "Use this CTA when the relaunch promise is sharper than the old listing, page, or onboarding flow.",
       goal: "Restart attention from retained users and turn passive usage into clearer product signal.",
@@ -528,6 +587,19 @@ function supportAssetIsReady(product) {
   ))
 }
 
+function gateTargetLabel(stage) {
+  return ({
+    beta: "paid beta",
+    growth: "growth push",
+    idea: "validation sprint",
+    launch: "paid launch",
+    prototype: "prototype test",
+    relaunch: "relaunch",
+    shipped: "revenue review",
+    stalled: "restart"
+  })[stage] ?? "launch"
+}
+
 function gateStatus(product) {
   const docs = docsStats(product)
   const readiness = readinessPercent(product)
@@ -594,7 +666,7 @@ function gateStatus(product) {
   const blockers = criteria.filter((item) => item.status === "blocked")
   const risks = criteria.filter((item) => item.status === "at-risk")
   const level = blockers.length ? "blocked" : risks.length ? "at-risk" : "ready"
-  const betaLabel = product.stage === "beta" ? "paid beta" : "launch"
+  const betaLabel = gateTargetLabel(product.stage)
   const verdict = level === "ready"
     ? `Ready for ${betaLabel}`
     : level === "at-risk"
@@ -782,6 +854,55 @@ function saveBrief(event) {
     hasUnsavedFormChanges = false
   } catch {
     errorMessage = "Could not save the brief locally. Keep this tab open and try again."
+  }
+
+  render()
+}
+
+function saveSetup(event) {
+  event.preventDefault()
+
+  const product = activeProduct()
+  const form = new FormData(event.currentTarget)
+  const sourceLink = String(form.get("sourceLink") ?? "").trim()
+
+  if (sourceLink && !safeProofLink(sourceLink)) {
+    errorMessage = "Use a full http or https link for the source link."
+    render()
+    return
+  }
+
+  const setupProfile = {
+    businessModel: String(form.get("businessModel") ?? "unknown"),
+    currentGoal: String(form.get("currentGoal") ?? "validate"),
+    hasPrototype: String(form.get("hasPrototype") ?? "unknown"),
+    hasRepo: String(form.get("hasRepo") ?? "unknown"),
+    isCharging: String(form.get("isCharging") ?? "unknown"),
+    productType: String(form.get("productType") ?? "other"),
+    sourceLink,
+    stageOverride: String(form.get("stageOverride") ?? "auto"),
+    traction: String(form.get("traction") ?? "").trim(),
+    usersHaveAccess: String(form.get("usersHaveAccess") ?? "unknown")
+  }
+  const nextStage = inferStageFromProfile(setupProfile, product.stage)
+  const definition = stageDefinition(nextStage)
+  const currentFocus = String(form.get("currentFocus") ?? "").trim()
+  const nextProduct = {
+    ...product,
+    currentFocus: currentFocus || definition.focus,
+    name: String(form.get("name") ?? "").trim() || product.name,
+    repoUrl: sourceLink,
+    setupProfile,
+    stage: nextStage,
+    status: String(form.get("status") ?? "").trim() || definition.defaultStatus,
+    targetDate: String(form.get("targetDate") ?? "").trim() || "TBD"
+  }
+
+  try {
+    commitWorkspace(workspaceWithActiveProduct(nextProduct), `Setup saved at ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`)
+    hasUnsavedFormChanges = false
+  } catch {
+    errorMessage = "Could not save the setup locally. Keep this tab open and try again."
   }
 
   render()
@@ -1212,6 +1333,206 @@ function copySharePackageItem(key) {
     })
 }
 
+function renderSetupAsset(asset) {
+  return `
+    <li>
+      <span>${escapeHtml(asset.label)}</span>
+      <p>${escapeHtml(asset.next)}</p>
+    </li>
+  `
+}
+
+function renderSetupModule(module) {
+  return `<span>${escapeHtml(module)}</span>`
+}
+
+function renderSetupAction(action, index) {
+  return `
+    <li>
+      <span>${index + 1}</span>
+      <p>${escapeHtml(action)}</p>
+    </li>
+  `
+}
+
+function renderSetup(product) {
+  const engine = stageEngineResult(product)
+  const profile = engine.profile
+  const inferredLabel = stageLabels[engine.inferredStage] ?? engine.inferredStage
+  const currentLabel = stageLabels[engine.stage] ?? engine.stage
+  const savedLabel = stageLabels[engine.savedStage] ?? engine.savedStage
+  const stageNote = engine.stageChanged
+    ? `Signals point to ${inferredLabel}; saved room is ${savedLabel}.`
+    : `${currentLabel} fits the current setup signals.`
+  const missingAssets = engine.missingAssets.length
+    ? engine.missingAssets.map(renderSetupAsset).join("")
+    : `
+      <li>
+        <span>Clear</span>
+        <p>No major setup gaps surfaced for this stage.</p>
+      </li>
+    `
+
+  return `
+    ${errorMessage ? `<p class="error-message">${escapeHtml(errorMessage)}</p>` : ""}
+    <section class="setup-surface">
+      <article class="setup-hero">
+        <div>
+          <p class="eyebrow">Product Setup</p>
+          <h2>Route the room from product reality.</h2>
+          <p>${escapeHtml(stageNote)}</p>
+        </div>
+        <aside class="setup-verdict">
+          <span>${engine.completeness}%</span>
+          <strong>Setup signal</strong>
+          <small>${escapeHtml(engine.definition.surfaceLabel)}</small>
+        </aside>
+      </article>
+
+      <div class="setup-diagnosis">
+        <article>
+          <span>Mode</span>
+          <strong>${escapeHtml(currentLabel)}</strong>
+          <p>${escapeHtml(engine.definition.focus)}</p>
+        </article>
+        <article>
+          <span>Surface</span>
+          <strong>${escapeHtml(engine.definition.surfaceLabel)}</strong>
+          <p>${escapeHtml(surfaceTemplateForProduct({ ...product, stage: engine.stage }).goal)}</p>
+        </article>
+        <article>
+          <span>Goal</span>
+          <strong>${escapeHtml(setupOptions.currentGoals[profile.currentGoal] ?? profile.currentGoal)}</strong>
+          <p>${escapeHtml(profile.traction || "No traction note captured yet.")}</p>
+        </article>
+      </div>
+
+      <form id="setup-form" class="editor-form setup-form">
+        <div class="surface-heading">
+          <div>
+            <p class="eyebrow">Stage Engine Inputs</p>
+            <h2>Product, stage, model, and signal.</h2>
+          </div>
+          <button class="primary-button" type="submit">Save setup</button>
+        </div>
+
+        <div class="setup-form__grid">
+          <label for="setupName">
+            <span>Product name</span>
+            <input id="setupName" name="name" value="${escapeHtml(product.name)}" />
+          </label>
+          <label for="setupProductType">
+            <span>Product type</span>
+            <select id="setupProductType" name="productType">
+              ${renderOptions(setupOptions.productTypes, profile.productType)}
+            </select>
+          </label>
+          <label for="setupBusinessModel">
+            <span>Business model</span>
+            <select id="setupBusinessModel" name="businessModel">
+              ${renderOptions(setupOptions.businessModels, profile.businessModel)}
+            </select>
+          </label>
+          <label for="setupGoal">
+            <span>Current goal</span>
+            <select id="setupGoal" name="currentGoal">
+              ${renderOptions(setupOptions.currentGoals, profile.currentGoal)}
+            </select>
+          </label>
+          <label for="setupStageOverride">
+            <span>Stage</span>
+            <select id="setupStageOverride" name="stageOverride">
+              ${renderOptions(setupOptions.stageOverrides, profile.stageOverride)}
+            </select>
+          </label>
+          <label for="setupTargetDate">
+            <span>Target date</span>
+            <input id="setupTargetDate" name="targetDate" value="${escapeHtml(product.targetDate)}" placeholder="TBD" />
+          </label>
+          <label for="setupStatus">
+            <span>Status</span>
+            <input id="setupStatus" name="status" value="${escapeHtml(product.status)}" placeholder="${escapeHtml(engine.definition.defaultStatus)}" />
+          </label>
+          <label for="setupSourceLink">
+            <span>Source link</span>
+            <input id="setupSourceLink" name="sourceLink" inputmode="url" value="${escapeHtml(profile.sourceLink)}" placeholder="https://github.com/..." />
+          </label>
+        </div>
+
+        <div class="setup-form__signals">
+          <label for="setupHasPrototype">
+            <span>Working prototype?</span>
+            <select id="setupHasPrototype" name="hasPrototype">
+              ${renderOptions(setupOptions.signals, profile.hasPrototype)}
+            </select>
+          </label>
+          <label for="setupHasRepo">
+            <span>Repo or source?</span>
+            <select id="setupHasRepo" name="hasRepo">
+              ${renderOptions(setupOptions.signals, profile.hasRepo)}
+            </select>
+          </label>
+          <label for="setupUsersAccess">
+            <span>Users have access?</span>
+            <select id="setupUsersAccess" name="usersHaveAccess">
+              ${renderOptions(setupOptions.signals, profile.usersHaveAccess)}
+            </select>
+          </label>
+          <label for="setupCharging">
+            <span>Charging?</span>
+            <select id="setupCharging" name="isCharging">
+              ${renderOptions(setupOptions.signals, profile.isCharging)}
+            </select>
+          </label>
+        </div>
+
+        <label for="setupTraction">
+          <span>Traction or proof note</span>
+          <textarea id="setupTraction" name="traction" rows="3" placeholder="Users, installs, waitlist, revenue, interviews, demos, or observed demand.">${escapeHtml(profile.traction)}</textarea>
+        </label>
+
+        <label for="setupCurrentFocus">
+          <span>Current focus</span>
+          <textarea id="setupCurrentFocus" name="currentFocus" rows="3">${escapeHtml(product.currentFocus || engine.definition.focus)}</textarea>
+        </label>
+      </form>
+
+      <div class="setup-engine-grid">
+        <article class="setup-panel">
+          <div class="preview-section-heading">
+            <p class="eyebrow">Missing Assets</p>
+            <span>${engine.missingAssets.length} surfaced</span>
+          </div>
+          <ul class="setup-missing-list">
+            ${missingAssets}
+          </ul>
+        </article>
+        <article class="setup-panel">
+          <div class="preview-section-heading">
+            <p class="eyebrow">Room Mix</p>
+            <span>${engine.definition.modules.length} modules</span>
+          </div>
+          <div class="setup-module-list">
+            ${engine.definition.modules.map(renderSetupModule).join("")}
+          </div>
+          <div class="setup-bias">
+            ${engine.definition.readinessBias.map(renderSetupModule).join("")}
+          </div>
+        </article>
+        <article class="setup-panel setup-panel--wide">
+          <div class="preview-section-heading">
+            <p class="eyebrow">Recommended Stack</p>
+            <span>${engine.nextActions.length} moves</span>
+          </div>
+          <ol class="question-list">
+            ${engine.nextActions.map(renderSetupAction).join("")}
+          </ol>
+        </article>
+      </div>
+    </section>
+  `
+}
+
 function renderProductNav(product) {
   return workspace.products
     .map((item) => {
@@ -1343,6 +1664,7 @@ function renderEditor(product) {
 
 function renderWarroom(product) {
   const percent = readinessPercent(product)
+  const engine = stageEngineResult(product)
 
   return `
     ${errorMessage ? `<p class="error-message">${escapeHtml(errorMessage)}</p>` : ""}
@@ -1351,7 +1673,7 @@ function renderWarroom(product) {
     <section class="focus-card">
       <p class="eyebrow">This Week's Launch Focus</p>
       <h2>${escapeHtml(product.currentFocus)}</h2>
-      <p>${escapeHtml(stageJobs[product.stage])}</p>
+      <p>${escapeHtml(engine.definition.focus || stageJobs[product.stage])}</p>
       <ol class="actions">
         ${renderActions(product)}
       </ol>
@@ -1386,6 +1708,13 @@ function renderWarroom(product) {
         <h3>Build Launch Site</h3>
         <p>Generate a first launch surface from the brief, docs, decisions, and readiness gate.</p>
         <button type="button" data-view="forge">Open Forge</button>
+      </article>
+
+      <article class="panel setup-summary">
+        <p class="eyebrow">Stage Engine</p>
+        <h3>${escapeHtml(engine.definition.surfaceLabel)}</h3>
+        <p>${escapeHtml(engine.stageChanged ? `Signals point to ${stageLabels[engine.inferredStage]}.` : `${engine.completeness}% setup signal captured.`)}</p>
+        <button type="button" data-view="setup">Open Setup</button>
       </article>
     </section>
   `
@@ -2932,6 +3261,7 @@ function renderForge(product) {
 }
 
 function renderActiveView(product) {
+  if (activeView === "setup") return renderSetup(product)
   if (activeView === "brief") return renderBrief(product)
   if (activeView === "decisions") return renderDecisions(product)
   if (activeView === "docs") return renderDocs(product)
@@ -2967,6 +3297,7 @@ function bindEvents() {
     button.addEventListener("click", cancelEdit)
   })
   document.querySelector("#room-editor")?.addEventListener("submit", saveRoom)
+  document.querySelector("#setup-form")?.addEventListener("submit", saveSetup)
   document.querySelector("#brief-form")?.addEventListener("submit", saveBrief)
   document.querySelector("#decision-form")?.addEventListener("submit", addDecision)
   document.querySelector("#docs-form")?.addEventListener("submit", saveDocsAssets)
