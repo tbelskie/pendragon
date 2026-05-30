@@ -154,6 +154,17 @@ In v0.7, Forge becomes stage-aware:
 - prototype products generate a validation page
 - each surface gets a conversion goal, CTA, trust frame, and buyer questions
 
+In v0.9, Forge adds Launch Surface Controls:
+
+- offer
+- CTA label
+- CTA URL
+- support URL
+- trust claim
+- founder note
+
+These controls keep Forge editable without turning it into a full page builder.
+
 The core job:
 
 > Build a launch site from the product room.

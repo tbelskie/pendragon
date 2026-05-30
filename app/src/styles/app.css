@@ -1221,6 +1221,19 @@ button {
   margin: 0;
 }
 
+.forge-controls-form {
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.018));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 22px;
+}
+
+.forge-controls-form__row {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .launch-preview {
   display: grid;
   gap: 18px;
@@ -1318,7 +1331,8 @@ button {
 .launch-preview__copy section,
 .proof-grid article,
 .gap-list li,
-.launch-preview__footer aside {
+.launch-preview__footer aside,
+.launch-preview__note {
   background: rgba(255,255,255,0.035);
   border: 1px solid var(--line-soft);
   border-radius: 8px;
@@ -1348,6 +1362,20 @@ button {
   font-size: 23px;
   line-height: 1.1;
   margin: 8px 0;
+}
+
+.surface-cta-link,
+.surface-support-link {
+  color: var(--ember);
+  display: inline-flex;
+  font-weight: 900;
+  margin-top: 4px;
+  text-decoration: none;
+}
+
+.surface-cta-link:hover,
+.surface-support-link:hover {
+  text-decoration: underline;
 }
 
 .launch-preview__facts strong,
@@ -1553,6 +1581,18 @@ button {
   margin: 0;
 }
 
+.launch-preview__note {
+  display: grid;
+  gap: 8px;
+  margin: 0 24px 24px;
+}
+
+.launch-preview__note p:not(.eyebrow) {
+  color: var(--muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
 @media (max-width: 980px) {
   .shell {
     grid-template-columns: 1fr;
@@ -1620,6 +1660,7 @@ button {
   .asset-grid,
   .forge-readiness,
   .forge-strategy,
+  .forge-controls-form__row,
   .evidence-command,
   .evidence-grid,
   .evidence-card,
