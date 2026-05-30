@@ -95,6 +95,85 @@ function docsPriorityRank(priority) {
   return ({ Critical: 0, High: 1, Medium: 2, Low: 3 })[priority] ?? 4
 }
 
+function surfaceTemplateForProduct(product) {
+  if (product.stage === "beta") {
+    return {
+      ctaDetail: "Use this CTA only when the trust story, install path, and support loop are honest enough for paid early access.",
+      goal: "Convert qualified early users into paid beta customers without hiding what is still unfinished.",
+      id: "paid-beta",
+      label: "Paid beta page",
+      offerLabel: "Beta offer",
+      primaryCta: "Join paid beta",
+      proofLabel: "Beta trust",
+      questionLabel: "Buyer questions",
+      risk: "A stranger has to believe the product is useful, safe enough, and worth paying for now."
+    }
+  }
+
+  if (product.stage === "growth") {
+    return {
+      ctaDetail: "Use this CTA when the relaunch promise is sharper than the old listing, page, or onboarding flow.",
+      goal: "Restart attention from retained users and turn passive usage into clearer product signal.",
+      id: "relaunch",
+      label: "Relaunch page",
+      offerLabel: "Relaunch offer",
+      primaryCta: "Try the relaunch",
+      proofLabel: "Retention proof",
+      questionLabel: "Relaunch questions",
+      risk: "Users need to understand why this is newly worth their attention."
+    }
+  }
+
+  return {
+    ctaDetail: "Use this CTA to collect signal before pretending the product is ready for a broad launch.",
+    goal: "Validate the promise, audience, and trust hurdle before the founder overbuilds.",
+    id: "validation",
+    label: "Validation page",
+    offerLabel: "Validation offer",
+    primaryCta: "Join the waitlist",
+    proofLabel: "Credibility proof",
+    questionLabel: "Validation questions",
+    risk: "The page has to learn whether anyone wants the promise badly enough to keep going."
+  }
+}
+
+function trustSensitiveAsset(asset) {
+  return /trust|privacy|permission|support|feedback|save|export|install|local data|security/i
+    .test(`${asset.title} ${asset.purpose} ${asset.id}`)
+}
+
+function launchSurfaceQuestions(product, gate, openAssets) {
+  const questions = []
+
+  if (gate.revenue < 40) {
+    questions.push("What exactly does the user pay, and what do they receive today?")
+  }
+
+  if (gate.trust < 70 || openAssets.some(trustSensitiveAsset)) {
+    questions.push("Can a cautious user trust the product with their time, money, and data?")
+  }
+
+  if (!supportAssetIsReady(product)) {
+    questions.push("Where does the user go when install, purchase, or usage breaks?")
+  }
+
+  const criticalAsset = openAssets.find((asset) => asset.priority === "Critical")
+  if (criticalAsset) {
+    questions.push(`What must be true before publishing ${criticalAsset.title}?`)
+  }
+
+  const unresolved = gate.unresolved[0]
+  if (unresolved) {
+    questions.push(`Which path are we choosing for: ${unresolved.title}`)
+  }
+
+  if (!questions.length) {
+    questions.push("What proof would make this surface stronger before the next launch push?")
+  }
+
+  return questions.slice(0, 5)
+}
+
 function readinessSection(product, name) {
   return product.readiness?.find((section) => section.name === name) ?? { name, done: 0, total: 1 }
 }
@@ -222,8 +301,12 @@ function launchSurfaceModel(product) {
   const nextActions = (product.nextActions ?? []).filter(Boolean)
   const readyAssets = gate.docs.assets.filter((asset) => asset.status === "ready")
   const proofAssets = gate.docs.assets.filter((asset) => safeProofLink(asset.proofLink))
+  const template = surfaceTemplateForProduct(product)
   const openAssets = gate.docs.assets
     .filter((asset) => asset.status !== "ready")
+    .sort((left, right) => docsPriorityRank(left.priority) - docsPriorityRank(right.priority))
+  const trustAssets = gate.docs.assets
+    .filter(trustSensitiveAsset)
     .sort((left, right) => docsPriorityRank(left.priority) - docsPriorityRank(right.priority))
   const launchGaps = [
     ...openAssets.map((asset) => ({
@@ -250,12 +333,15 @@ function launchSurfaceModel(product) {
     pricing: fallbackText(brief.pricingHypothesis, "Pricing hypothesis not captured yet."),
     problem: fallbackText(brief.problem, "The launch room has not captured the core problem yet."),
     proofAssets,
+    questions: launchSurfaceQuestions(product, gate, openAssets),
     promise: fallbackText(brief.promise, "The launch room has not captured the product promise yet."),
     readyAssets,
     stageLabel: stageLabels[product.stage] ?? product.stage,
     strategicConstraint: fallbackText(brief.strategicConstraint, "No strategic constraint captured yet."),
     supportReady: supportAssetIsReady(product),
-    targetDate: fallbackText(product.targetDate, "Target date not set")
+    template,
+    targetDate: fallbackText(product.targetDate, "Target date not set"),
+    trustAssets
   }
 }
 
@@ -1063,6 +1149,52 @@ function renderProofAsset(asset) {
   `
 }
 
+function renderTrustAsset(asset) {
+  const proofLink = safeProofLink(asset.proofLink)
+
+  return `
+    <li>
+      <span class="doc-chip doc-chip--${escapeHtml(asset.status)}">${escapeHtml(docsStatusLabels[asset.status] ?? asset.status)}</span>
+      <div>
+        <strong>${escapeHtml(asset.title)}</strong>
+        <p>${escapeHtml(asset.nextStep || asset.purpose)}</p>
+        ${proofLink ? `<a href="${escapeHtml(proofLink)}" rel="noreferrer" target="_blank">Open proof</a>` : ""}
+      </div>
+    </li>
+  `
+}
+
+function renderSurfaceQuestion(question, index) {
+  return `
+    <li>
+      <span>${index + 1}</span>
+      <p>${escapeHtml(question)}</p>
+    </li>
+  `
+}
+
+function renderForgeStrategy(surface) {
+  return `
+    <div class="forge-strategy">
+      <article>
+        <span>Surface Type</span>
+        <strong>${escapeHtml(surface.template.label)}</strong>
+        <p>${escapeHtml(surface.template.goal)}</p>
+      </article>
+      <article>
+        <span>Primary CTA</span>
+        <strong>${escapeHtml(surface.template.primaryCta)}</strong>
+        <p>${escapeHtml(surface.template.ctaDetail)}</p>
+      </article>
+      <article>
+        <span>Hard Truth</span>
+        <strong>${escapeHtml(surface.template.proofLabel)}</strong>
+        <p>${escapeHtml(surface.template.risk)}</p>
+      </article>
+    </div>
+  `
+}
+
 function renderLaunchSurfacePreview(product) {
   const surface = launchSurfaceModel(product)
   const proofAssets = surface.proofAssets.length
@@ -1077,6 +1209,17 @@ function renderLaunchSurfacePreview(product) {
   const readyAssets = surface.readyAssets.length
     ? surface.readyAssets.slice(0, 4).map((asset) => `<li>${escapeHtml(asset.title)}</li>`).join("")
     : "<li>No ready docs assets yet.</li>"
+  const trustAssets = surface.trustAssets.length
+    ? surface.trustAssets.slice(0, 4).map(renderTrustAsset).join("")
+    : `
+      <li>
+        <span class="doc-chip doc-chip--missing">Missing</span>
+        <div>
+          <strong>No trust-sensitive assets mapped yet.</strong>
+          <p>Add privacy, support, install, save, export, or permissions docs before publishing.</p>
+        </div>
+      </li>
+    `
   const gaps = surface.launchGaps.length
     ? surface.launchGaps.map(renderLaunchGap).join("")
     : `
@@ -1119,9 +1262,22 @@ function renderLaunchSurfacePreview(product) {
 
       <div class="launch-preview__facts">
         <span><strong>Audience</strong>${escapeHtml(surface.audience)}</span>
-        <span><strong>Mode</strong>${escapeHtml(surface.stageLabel)}</span>
+        <span><strong>Surface</strong>${escapeHtml(surface.template.label)}</span>
         <span><strong>Target</strong>${escapeHtml(surface.targetDate)}</span>
       </div>
+
+      <section class="launch-preview__offer">
+        <div>
+          <p class="eyebrow">${escapeHtml(surface.template.offerLabel)}</p>
+          <h3>${escapeHtml(surface.pricing)}</h3>
+          <p>${escapeHtml(surface.template.goal)}</p>
+        </div>
+        <aside>
+          <span>Primary CTA</span>
+          <strong>${escapeHtml(surface.template.primaryCta)}</strong>
+          <p>${escapeHtml(surface.template.ctaDetail)}</p>
+        </aside>
+      </section>
 
       <div class="launch-preview__copy">
         <section>
@@ -1149,12 +1305,15 @@ function renderLaunchSurfacePreview(product) {
       <div class="launch-preview__split">
         <section>
           <div class="preview-section-heading">
-            <p class="eyebrow">Proof And Docs</p>
+            <p class="eyebrow">${escapeHtml(surface.template.proofLabel)}</p>
             <span>${surface.readyAssets.length}/${surface.gate.docs.assets.length} ready</span>
           </div>
           <div class="proof-grid">
             ${proofAssets}
           </div>
+          <ul class="trust-list">
+            ${trustAssets}
+          </ul>
           <ul class="ready-list">
             ${readyAssets}
           </ul>
@@ -1170,6 +1329,16 @@ function renderLaunchSurfacePreview(product) {
           </ul>
         </section>
       </div>
+
+      <section class="launch-preview__questions">
+        <div class="preview-section-heading">
+          <p class="eyebrow">${escapeHtml(surface.template.questionLabel)}</p>
+          <span>${surface.questions.length} to answer</span>
+        </div>
+        <ol class="question-list">
+          ${surface.questions.map(renderSurfaceQuestion).join("")}
+        </ol>
+      </section>
 
       <footer class="launch-preview__footer">
         <div>
@@ -1230,6 +1399,29 @@ function buildLaunchSurfaceHtml(product) {
   const actionItems = surface.nextActions.length
     ? surface.nextActions.map((action, index) => `<li><span>${index + 1}</span>${escapeHtml(action)}</li>`).join("")
     : "<li><span>1</span>Capture the next launch move in Pendragon.</li>"
+  const trustItems = surface.trustAssets.length
+    ? surface.trustAssets.slice(0, 4).map((asset) => {
+      const proofLink = safeProofLink(asset.proofLink)
+
+      return `
+        <li>
+          <span>${escapeHtml(docsStatusLabels[asset.status] ?? asset.status)}</span>
+          <strong>${escapeHtml(asset.title)}</strong>
+          <p>${escapeHtml(asset.nextStep || asset.purpose)}</p>
+          ${proofLink ? `<a href="${escapeHtml(proofLink)}" rel="noreferrer" target="_blank">Open proof</a>` : ""}
+        </li>
+      `
+    }).join("")
+    : `
+      <li>
+        <span>Missing</span>
+        <strong>No trust-sensitive assets mapped yet.</strong>
+        <p>Add privacy, support, install, save, export, or permissions docs before publishing.</p>
+      </li>
+    `
+  const questionItems = surface.questions
+    .map((question, index) => `<li><span>${index + 1}</span>${escapeHtml(question)}</li>`)
+    .join("")
 
   return `<!doctype html>
 <html lang="en">
@@ -1319,21 +1511,26 @@ function buildLaunchSurfaceHtml(product) {
 
       .facts,
       .copy,
-      .grid {
+      .grid,
+      .cta {
         display: grid;
         gap: 14px;
       }
 
       .facts,
-      .grid {
+      .grid,
+      .cta {
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
 
       .facts span,
       .card,
       .copy section,
+      .cta article,
       .actions li,
-      .gaps li {
+      .gaps li,
+      .questions li,
+      .trust li {
         background: rgba(255,255,255,0.035);
         border: 1px solid var(--line);
         border-radius: 10px;
@@ -1343,7 +1540,10 @@ function buildLaunchSurfaceHtml(product) {
       .facts strong,
       .card span,
       .gaps span,
-      .actions span {
+      .actions span,
+      .questions span,
+      .trust span,
+      .cta span {
         color: var(--ember);
         display: block;
         font-size: 12px;
@@ -1385,8 +1585,27 @@ function buildLaunchSurfaceHtml(product) {
         text-decoration: none;
       }
 
+      .cta article:first-child {
+        grid-column: span 2;
+      }
+
+      .cta h2 {
+        font-size: 28px;
+        line-height: 1.1;
+        margin: 8px 0;
+      }
+
+      .cta strong {
+        display: block;
+        font-size: 24px;
+        line-height: 1.1;
+        margin: 8px 0;
+      }
+
       .gaps,
-      .actions {
+      .actions,
+      .questions,
+      .trust {
         display: grid;
         gap: 10px;
         list-style: none;
@@ -1403,8 +1622,13 @@ function buildLaunchSurfaceHtml(product) {
         .hero,
         .facts,
         .copy,
-        .grid {
+        .grid,
+        .cta {
           grid-template-columns: 1fr;
+        }
+
+        .cta article:first-child {
+          grid-column: auto;
         }
 
         h1 {
@@ -1430,8 +1654,21 @@ function buildLaunchSurfaceHtml(product) {
 
       <section class="facts">
         <span><strong>Audience</strong>${escapeHtml(surface.audience)}</span>
+        <span><strong>Surface</strong>${escapeHtml(surface.template.label)}</span>
         <span><strong>Milestone</strong>${escapeHtml(surface.milestone)}</span>
-        <span><strong>Pricing</strong>${escapeHtml(surface.pricing)}</span>
+      </section>
+
+      <section class="cta">
+        <article>
+          <span>${escapeHtml(surface.template.offerLabel)}</span>
+          <h2>${escapeHtml(surface.pricing)}</h2>
+          <p>${escapeHtml(surface.template.goal)}</p>
+        </article>
+        <article>
+          <span>Primary CTA</span>
+          <strong>${escapeHtml(surface.template.primaryCta)}</strong>
+          <p>${escapeHtml(surface.template.ctaDetail)}</p>
+        </article>
       </section>
 
       <section class="section">
@@ -1454,11 +1691,22 @@ function buildLaunchSurfaceHtml(product) {
       </section>
 
       <section class="section">
-        <p class="eyebrow">Proof And Docs</p>
+        <p class="eyebrow">${escapeHtml(surface.template.proofLabel)}</p>
         <h2>What can be trusted or inspected right now.</h2>
         <div class="grid">
           ${proofItems}
         </div>
+        <ul class="trust">
+          ${trustItems}
+        </ul>
+      </section>
+
+      <section class="section">
+        <p class="eyebrow">${escapeHtml(surface.template.questionLabel)}</p>
+        <h2>Questions to answer before this surface goes wider.</h2>
+        <ol class="questions">
+          ${questionItems}
+        </ol>
       </section>
 
       <section class="section">
@@ -1519,9 +1767,9 @@ function renderForge(product) {
     <section class="launch-surface forge-surface">
       <article class="forge-hero">
         <div>
-          <p class="eyebrow">Forge</p>
+          <p class="eyebrow">Forge / ${escapeHtml(surface.template.label)}</p>
           <h2>Build the first launch surface from the room.</h2>
-          <p>Forge turns the brief, docs tracker, decisions, and readiness gate into a launch-page draft you can inspect and export.</p>
+          <p>Forge turns the brief, docs tracker, decisions, and readiness gate into a stage-aware launch-page draft you can inspect and export.</p>
         </div>
         <div class="forge-actions">
           <button class="primary-button" type="button" data-action="export-launch-surface">Download HTML draft</button>
@@ -1533,6 +1781,8 @@ function renderForge(product) {
       <div class="forge-readiness">
         ${readySignals.map(renderForgeSignal).join("")}
       </div>
+
+      ${renderForgeStrategy(surface)}
 
       ${renderLaunchSurfacePreview(product)}
     </section>

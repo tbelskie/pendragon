@@ -128,6 +128,13 @@ In v0.6, Forge creates:
 - proof links from docs assets when safe external links exist
 - missing-surface prompts based on open docs and unresolved decisions
 
+In v0.7, Forge becomes stage-aware:
+
+- beta products generate a paid beta page
+- growth products generate a relaunch page
+- prototype products generate a validation page
+- each surface gets a conversion goal, CTA, trust frame, and buyer questions
+
 The core job:
 
 > Build a launch site from the product room.
