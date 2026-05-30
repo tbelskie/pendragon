@@ -34,6 +34,7 @@ Each product gets a launch room, docs plan, pricing hypothesis, decision ledger,
 - [v0.10 Launch Surface QA Plan](docs/product/v0.10-launch-surface-qa-plan.md)
 - [v0.11 Launch Share Package Plan](docs/product/v0.11-launch-share-package-plan.md)
 - [v0.12 Manual Publish Path Plan](docs/product/v0.12-manual-publish-path-plan.md)
+- [v0.13 Launch Surface History Plan](docs/product/v0.13-launch-surface-history-plan.md)
 - [Pendragon As Meta-Product](docs/product/pendragon-meta-product.md)
 - [Editable Warroom Mockups](docs/design/editable-warroom-mockups.md)
 - [Docs Tracker Mockups](docs/design/docs-tracker-mockups.md)
@@ -45,4 +46,5 @@ Each product gets a launch room, docs plan, pricing hypothesis, decision ledger,
 - [Launch Surface QA](docs/design/launch-surface-qa.md)
 - [Launch Share Package](docs/design/launch-share-package.md)
 - [Manual Publish Path](docs/design/manual-publish-path.md)
+- [Launch Surface History](docs/design/launch-surface-history.md)
 - [Archived Notebook](archive/notebook/)
