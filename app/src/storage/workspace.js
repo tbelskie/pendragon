@@ -21,6 +21,10 @@ function mergeProduct(seedProduct, storedProduct = {}) {
       ...seedProduct.brief,
       ...(storedProduct.brief ?? {})
     },
+    surfaceSettings: {
+      ...(seedProduct.surfaceSettings ?? {}),
+      ...(storedProduct.surfaceSettings ?? {})
+    },
     decisions: Array.isArray(storedProduct.decisions)
       ? storedProduct.decisions
       : structuredClone(seedProduct.decisions ?? []),

@@ -19,6 +19,14 @@ export const workspaceSeed = {
         primaryMilestone: "Paid Mac beta ready before the October writing-season runway.",
         strategicConstraint: "Do not ship anything that weakens save/export trust."
       },
+      surfaceSettings: {
+        offer: "$19 early access for the first Mac beta, moving toward a $29 launch license if save/export trust is strong.",
+        ctaLabel: "Join paid beta",
+        ctaUrl: "",
+        supportUrl: "",
+        trustClaim: "Writing Quest is offline-first, but the save/export behavior must be proven before this page asks strangers for money.",
+        launchNote: "Use this as the paid beta page skeleton; do not publish until save/export trust and install instructions are real."
+      },
       decisions: [
         {
           id: "decision-writing-quest-pricing",

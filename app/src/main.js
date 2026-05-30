@@ -217,6 +217,23 @@ function launchSurfaceQuestions(product, gate, openAssets) {
   return questions.slice(0, 5)
 }
 
+function productSurfaceSettings(product) {
+  return product.surfaceSettings ?? {}
+}
+
+function launchSurfaceControls(product, template) {
+  const settings = productSurfaceSettings(product)
+
+  return {
+    ctaLabel: fallbackText(settings.ctaLabel, template.primaryCta),
+    ctaUrl: safeProofLink(settings.ctaUrl),
+    launchNote: fallbackText(settings.launchNote, ""),
+    offer: fallbackText(settings.offer, product.brief?.pricingHypothesis ?? ""),
+    supportUrl: safeProofLink(settings.supportUrl),
+    trustClaim: fallbackText(settings.trustClaim, "")
+  }
+}
+
 function readinessSection(product, name) {
   return product.readiness?.find((section) => section.name === name) ?? { name, done: 0, total: 1 }
 }
@@ -346,6 +363,7 @@ function launchSurfaceModel(product) {
   const proofAssets = gate.docs.assets.filter((asset) => safeProofLink(asset.proofLink))
   const evidence = evidenceStats(product)
   const template = surfaceTemplateForProduct(product)
+  const controls = launchSurfaceControls(product, template)
   const openAssets = gate.docs.assets
     .filter((asset) => asset.status !== "ready")
     .sort((left, right) => docsPriorityRank(left.priority) - docsPriorityRank(right.priority))
@@ -369,6 +387,7 @@ function launchSurfaceModel(product) {
     audience: fallbackText(product.user, "Early users who need the clearest possible product promise."),
     evidence,
     gate,
+    controls,
     launchGaps,
     milestone: fallbackText(brief.primaryMilestone, product.targetDate || "First credible launch milestone."),
     name: fallbackText(product.name, "Untitled Product"),
@@ -593,6 +612,49 @@ function addEvidenceSource(event) {
     hasUnsavedFormChanges = false
   } catch {
     errorMessage = "Could not save the evidence link locally. Keep this tab open and try again."
+  }
+
+  render()
+}
+
+function saveForgeControls(event) {
+  event.preventDefault()
+
+  const product = activeProduct()
+  const form = new FormData(event.currentTarget)
+  const ctaUrl = String(form.get("ctaUrl") ?? "").trim()
+  const supportUrl = String(form.get("supportUrl") ?? "").trim()
+
+  if (ctaUrl && !safeProofLink(ctaUrl)) {
+    errorMessage = "Use a full http or https link for the CTA URL."
+    render()
+    return
+  }
+
+  if (supportUrl && !safeProofLink(supportUrl)) {
+    errorMessage = "Use a full http or https link for the support URL."
+    render()
+    return
+  }
+
+  const nextProduct = {
+    ...product,
+    surfaceSettings: {
+      ...(product.surfaceSettings ?? {}),
+      ctaLabel: String(form.get("ctaLabel") ?? "").trim(),
+      ctaUrl,
+      launchNote: String(form.get("launchNote") ?? "").trim(),
+      offer: String(form.get("offer") ?? "").trim(),
+      supportUrl,
+      trustClaim: String(form.get("trustClaim") ?? "").trim()
+    }
+  }
+
+  try {
+    commitWorkspace(workspaceWithActiveProduct(nextProduct), `Forge controls saved at ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`)
+    hasUnsavedFormChanges = false
+  } catch {
+    errorMessage = "Could not save the Forge controls locally. Keep this tab open and try again."
   }
 
   render()
@@ -1406,6 +1468,50 @@ function renderForgeStrategy(surface) {
   `
 }
 
+function renderForgeControls(product, surface) {
+  const settings = productSurfaceSettings(product)
+
+  return `
+    <form id="forge-controls-form" class="editor-form forge-controls-form">
+      <div class="surface-heading">
+        <div>
+          <p class="eyebrow">Launch Surface Controls</p>
+          <h2>Make the generated page publishable.</h2>
+        </div>
+        <button class="primary-button" type="submit">Save controls</button>
+      </div>
+      <label for="surfaceOffer">
+        <span>Offer</span>
+        <textarea id="surfaceOffer" name="offer" rows="2" placeholder="${escapeHtml(surface.pricing)}">${escapeHtml(settings.offer ?? "")}</textarea>
+      </label>
+      <div class="forge-controls-form__row">
+        <label for="surfaceCtaLabel">
+          <span>CTA label</span>
+          <input id="surfaceCtaLabel" name="ctaLabel" value="${escapeHtml(settings.ctaLabel ?? "")}" placeholder="${escapeHtml(surface.template.primaryCta)}" />
+        </label>
+        <label for="surfaceCtaUrl">
+          <span>CTA URL</span>
+          <input id="surfaceCtaUrl" name="ctaUrl" inputmode="url" value="${escapeHtml(settings.ctaUrl ?? "")}" placeholder="https://..." />
+        </label>
+      </div>
+      <div class="forge-controls-form__row">
+        <label for="surfaceSupportUrl">
+          <span>Support URL</span>
+          <input id="surfaceSupportUrl" name="supportUrl" inputmode="url" value="${escapeHtml(settings.supportUrl ?? "")}" placeholder="https://..." />
+        </label>
+        <label for="surfaceTrustClaim">
+          <span>Trust claim</span>
+          <input id="surfaceTrustClaim" name="trustClaim" value="${escapeHtml(settings.trustClaim ?? "")}" placeholder="What can you honestly promise?" />
+        </label>
+      </div>
+      <label for="surfaceLaunchNote">
+        <span>Founder note</span>
+        <textarea id="surfaceLaunchNote" name="launchNote" rows="2" placeholder="What should you remember before publishing this draft?">${escapeHtml(settings.launchNote ?? "")}</textarea>
+      </label>
+    </form>
+  `
+}
+
 function renderLaunchSurfacePreview(product) {
   const surface = launchSurfaceModel(product)
   const proofItems = [
@@ -1484,13 +1590,15 @@ function renderLaunchSurfacePreview(product) {
       <section class="launch-preview__offer">
         <div>
           <p class="eyebrow">${escapeHtml(surface.template.offerLabel)}</p>
-          <h3>${escapeHtml(surface.pricing)}</h3>
+          <h3>${escapeHtml(surface.controls.offer || surface.pricing)}</h3>
           <p>${escapeHtml(surface.template.goal)}</p>
         </div>
         <aside>
           <span>Primary CTA</span>
-          <strong>${escapeHtml(surface.template.primaryCta)}</strong>
-          <p>${escapeHtml(surface.template.ctaDetail)}</p>
+          <strong>${escapeHtml(surface.controls.ctaLabel)}</strong>
+          ${surface.controls.ctaUrl
+            ? `<a class="surface-cta-link" href="${escapeHtml(surface.controls.ctaUrl)}" rel="noreferrer" target="_blank">Open CTA link</a>`
+            : `<p>${escapeHtml(surface.template.ctaDetail)}</p>`}
         </aside>
       </section>
 
@@ -1509,11 +1617,15 @@ function renderLaunchSurfacePreview(product) {
         </section>
         <section>
           <p class="eyebrow">Pricing</p>
-          <p>${escapeHtml(surface.pricing)}</p>
+          <p>${escapeHtml(surface.controls.offer || surface.pricing)}</p>
         </section>
         <section class="wide">
           <p class="eyebrow">Strategic Constraint</p>
           <p>${escapeHtml(surface.strategicConstraint)}</p>
+        </section>
+        <section class="wide">
+          <p class="eyebrow">Trust Claim</p>
+          <p>${escapeHtml(surface.controls.trustClaim || "No explicit trust claim saved yet.")}</p>
         </section>
       </div>
 
@@ -1567,8 +1679,15 @@ function renderLaunchSurfacePreview(product) {
           <p>${surface.supportReady
             ? "The launch surface can point users toward feedback and support."
             : "Add a ready support or feedback docs asset before inviting beta users."}</p>
+          ${surface.controls.supportUrl ? `<a class="surface-support-link" href="${escapeHtml(surface.controls.supportUrl)}" rel="noreferrer" target="_blank">Open support link</a>` : ""}
         </aside>
       </footer>
+      ${surface.controls.launchNote ? `
+        <section class="launch-preview__note">
+          <p class="eyebrow">Founder Note</p>
+          <p>${escapeHtml(surface.controls.launchNote)}</p>
+        </section>
+      ` : ""}
     </article>
   `
 }
@@ -1646,6 +1765,20 @@ function buildLaunchSurfaceHtml(product) {
   const questionItems = surface.questions
     .map((question, index) => `<li><span>${index + 1}</span>${escapeHtml(question)}</li>`)
     .join("")
+  const ctaLink = surface.controls.ctaUrl
+    ? `<a class="cta-link" href="${escapeHtml(surface.controls.ctaUrl)}" rel="noreferrer" target="_blank">${escapeHtml(surface.controls.ctaLabel)}</a>`
+    : `<p>${escapeHtml(surface.template.ctaDetail)}</p>`
+  const supportLink = surface.controls.supportUrl
+    ? `<a href="${escapeHtml(surface.controls.supportUrl)}" rel="noreferrer" target="_blank">Open support link</a>`
+    : ""
+  const founderNote = surface.controls.launchNote
+    ? `
+      <section class="section">
+        <p class="eyebrow">Founder Note</p>
+        <p>${escapeHtml(surface.controls.launchNote)}</p>
+      </section>
+    `
+    : ""
 
   return `<!doctype html>
 <html lang="en">
@@ -1803,7 +1936,9 @@ function buildLaunchSurfaceHtml(product) {
         margin: 0;
       }
 
-      .card a {
+      .card a,
+      .cta-link,
+      .section a {
         color: var(--ember);
         font-weight: 800;
         text-decoration: none;
@@ -1885,13 +2020,13 @@ function buildLaunchSurfaceHtml(product) {
       <section class="cta">
         <article>
           <span>${escapeHtml(surface.template.offerLabel)}</span>
-          <h2>${escapeHtml(surface.pricing)}</h2>
+          <h2>${escapeHtml(surface.controls.offer || surface.pricing)}</h2>
           <p>${escapeHtml(surface.template.goal)}</p>
         </article>
         <article>
           <span>Primary CTA</span>
-          <strong>${escapeHtml(surface.template.primaryCta)}</strong>
-          <p>${escapeHtml(surface.template.ctaDetail)}</p>
+          <strong>${escapeHtml(surface.controls.ctaLabel)}</strong>
+          ${ctaLink}
         </article>
       </section>
 
@@ -1910,6 +2045,10 @@ function buildLaunchSurfaceHtml(product) {
           <section class="wide">
             <p class="eyebrow">Constraint</p>
             <p>${escapeHtml(surface.strategicConstraint)}</p>
+          </section>
+          <section class="wide">
+            <p class="eyebrow">Trust Claim</p>
+            <p>${escapeHtml(surface.controls.trustClaim || "No explicit trust claim saved yet.")}</p>
           </section>
         </div>
       </section>
@@ -1947,7 +2086,10 @@ function buildLaunchSurfaceHtml(product) {
         <ol class="actions">
           ${actionItems}
         </ol>
+        ${supportLink}
       </section>
+
+      ${founderNote}
 
       <footer>
         Draft generated by Pendragon on ${escapeHtml(generatedAt)}. Review before publishing.
@@ -2009,6 +2151,8 @@ function renderForge(product) {
 
       ${renderForgeStrategy(surface)}
 
+      ${renderForgeControls(product, surface)}
+
       ${renderLaunchSurfacePreview(product)}
     </section>
   `
@@ -2044,6 +2188,7 @@ function bindEvents() {
   document.querySelector("#decision-form")?.addEventListener("submit", addDecision)
   document.querySelector("#docs-form")?.addEventListener("submit", saveDocsAssets)
   document.querySelector("#evidence-form")?.addEventListener("submit", addEvidenceSource)
+  document.querySelector("#forge-controls-form")?.addEventListener("submit", saveForgeControls)
   document.querySelectorAll("form").forEach((form) => {
     const markDirty = () => {
       hasUnsavedFormChanges = true
