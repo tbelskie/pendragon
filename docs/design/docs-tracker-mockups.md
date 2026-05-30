@@ -20,8 +20,8 @@ Writing Quest launch knowledge map
 | High                                                   |
 | Anchor the launch story around cozy offline drafting.  |
 |                                                        |
-| Status      Next move                  Evidence        |
-| [Ready]     Keep the promise tight     Product brief   |
+| Status      Next move             Proof link     Evidence |
+| [Ready]     Keep promise tight    [open]         Brief    |
 +--------------------------------------------------------+
 
 +--------------------------------------------------------+
@@ -29,8 +29,8 @@ Writing Quest launch knowledge map
 | Critical                                               |
 | Explain where writing lives and how export works.       |
 |                                                        |
-| Status      Next move                  Evidence        |
-| [Blocked]   Confirm final behavior     [empty]         |
+| Status      Next move             Proof link     Evidence |
+| [Blocked]   Confirm behavior      [empty]        [empty]  |
 +--------------------------------------------------------+
 ```
 
@@ -58,6 +58,7 @@ Critical open
 - Use small status chips instead of large colorful panels.
 - Use orange for blocked launch risk, green for ready, blue for drafting, and muted gray for missing.
 - Keep editable fields inside each asset card so the user does not jump into a separate settings page.
+- Use proof links as proof-of-existence pointers to Google Docs, GitHub Pages, repo files, Notion, or any existing source.
 - Preserve the warroom feel: this is an operating surface, not a content management system.
 
 ## Product Meaning

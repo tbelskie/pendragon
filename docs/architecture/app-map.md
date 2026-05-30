@@ -92,7 +92,7 @@ Tracks the product's public knowledge surface:
 - support
 - API reference, if needed
 
-In v0.4, Docs becomes an editable tracker. Each docs asset has status, priority, purpose, next move, and evidence. Saving the tracker syncs the product's Docs readiness row.
+In v0.4, Docs becomes an editable tracker. Each docs asset has status, priority, purpose, next move, proof link, and evidence. Saving the tracker syncs the product's Docs readiness row.
 
 ### Gate
 
