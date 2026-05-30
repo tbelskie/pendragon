@@ -53,6 +53,18 @@ Output:
 
 In v0.14, Setup becomes an editable tab for the active product rather than a one-time onboarding screen.
 
+In v0.15, Setup gains product creation:
+
+- sidebar New product entry point
+- create-mode setup form
+- product name requirement
+- stage inference from setup signals
+- starter docs assets
+- starter readiness rows
+- first decision
+- source evidence link when supplied
+- immediate routing into the new Warroom
+
 ### Portfolio
 
 Shows the current product portfolio.
@@ -64,6 +76,8 @@ For internal dogfooding, seed:
 - MockBizOps
 - Vinegar
 - Pendragon
+
+Locally-created products are appended to the portfolio and stored in browser local storage.
 
 ### Product Warroom
 
