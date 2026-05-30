@@ -12,6 +12,7 @@ import {
 let workspace = loadWorkspace()
 let activeView = "warroom"
 let isEditing = false
+let isCreatingProduct = false
 let hasUnsavedFormChanges = false
 let statusMessage = "Local-only workspace"
 let errorMessage = ""
@@ -110,6 +111,19 @@ function normalizeReadiness(doneValue, totalValue) {
   const total = Math.max(1, numberValue(totalValue, 1))
   const done = Math.min(total, Math.max(0, numberValue(doneValue, 0)))
   return { done, total }
+}
+
+function uniqueProductId(name) {
+  const base = slugifyFilename(name)
+  let candidate = base
+  let index = 2
+
+  while (workspace.products.some((product) => product.id === candidate)) {
+    candidate = `${base}-${index}`
+    index += 1
+  }
+
+  return candidate
 }
 
 function renderOptions(options, currentValue) {
@@ -587,6 +601,134 @@ function supportAssetIsReady(product) {
   ))
 }
 
+function starterReadiness(profile) {
+  return [
+    { name: "Build", done: profile.hasPrototype === "yes" ? 2 : 0, total: 6 },
+    { name: "Docs", done: 0, total: 5 },
+    { name: "Launch", done: profile.currentGoal === "launch" ? 1 : 0, total: 6 },
+    { name: "Trust", done: profile.usersHaveAccess === "yes" ? 1 : 0, total: 5 },
+    { name: "Revenue", done: profile.isCharging === "yes" || profile.businessModel !== "unknown" ? 1 : 0, total: 5 }
+  ]
+}
+
+function starterDocsAssets(stage, name, productType, sourceLink) {
+  const normalizedType = setupOptions.productTypes[productType] ?? "Product"
+  const baseAssets = [
+    {
+      id: `${slugifyFilename(name)}-positioning`,
+      title: "Positioning brief",
+      status: "missing",
+      priority: "Critical",
+      purpose: "Define the first audience, problem, promise, and why-now story.",
+      nextStep: "Fill the brief from the new product setup.",
+      evidence: ""
+    },
+    {
+      id: `${slugifyFilename(name)}-source-of-truth`,
+      title: "Source of truth",
+      status: sourceLink ? "ready" : "missing",
+      priority: "High",
+      purpose: `Attach the repo, docs, or canonical source for this ${normalizedType.toLowerCase()}.`,
+      nextStep: sourceLink ? "Keep the source link current." : "Add a repo, docs, or product source link.",
+      proofLink: sourceLink,
+      evidence: sourceLink ? "Created from setup source link" : ""
+    },
+    {
+      id: `${slugifyFilename(name)}-support-path`,
+      title: "Support and feedback path",
+      status: "missing",
+      priority: "High",
+      purpose: "Give early users one obvious place to send bugs, confusion, and interest.",
+      nextStep: "Choose the support or feedback channel before inviting users.",
+      evidence: ""
+    }
+  ]
+  const stageAsset = {
+    idea: {
+      id: `${slugifyFilename(name)}-validation-plan`,
+      title: "Validation sprint plan",
+      status: "missing",
+      priority: "High",
+      purpose: "Define what would prove this idea deserves more build time.",
+      nextStep: "Write the first validation sprint and kill criteria.",
+      evidence: ""
+    },
+    prototype: {
+      id: `${slugifyFilename(name)}-mvp-scope`,
+      title: "MVP scope note",
+      status: "missing",
+      priority: "Critical",
+      purpose: "Protect the smallest useful version from shapeless building.",
+      nextStep: "Name the demo path and the explicit not-yet list.",
+      evidence: ""
+    },
+    beta: {
+      id: `${slugifyFilename(name)}-beta-page`,
+      title: "Beta landing page",
+      status: "missing",
+      priority: "Critical",
+      purpose: "Explain who the beta is for, what they get, and what is unfinished.",
+      nextStep: "Draft the beta offer, CTA, support path, and trust story.",
+      evidence: ""
+    },
+    launch: {
+      id: `${slugifyFilename(name)}-launch-page`,
+      title: "Paid launch page",
+      status: "missing",
+      priority: "Critical",
+      purpose: "Convert launch attention into a clear customer action.",
+      nextStep: "Draft the offer, price, CTA, and proof blocks.",
+      evidence: ""
+    },
+    shipped: {
+      id: `${slugifyFilename(name)}-traction-baseline`,
+      title: "Traction baseline",
+      status: "missing",
+      priority: "Critical",
+      purpose: "Capture what is already working before changing the product.",
+      nextStep: "Record users, installs, revenue, usage, and support signals.",
+      evidence: ""
+    },
+    stalled: {
+      id: `${slugifyFilename(name)}-restart-brief`,
+      title: "Restart brief",
+      status: "missing",
+      priority: "Critical",
+      purpose: "Explain why progress stopped and what move could restart signal.",
+      nextStep: "Name the smallest credible restart move.",
+      evidence: ""
+    },
+    relaunch: {
+      id: `${slugifyFilename(name)}-relaunch-page`,
+      title: "Relaunch page",
+      status: "missing",
+      priority: "Critical",
+      purpose: "Explain what is newly true and why attention should restart.",
+      nextStep: "Draft the relaunch angle, proof, CTA, and feedback loop.",
+      evidence: ""
+    },
+    growth: {
+      id: `${slugifyFilename(name)}-growth-experiment`,
+      title: "Growth experiment note",
+      status: "missing",
+      priority: "High",
+      purpose: "Turn usage signal into one measurable next experiment.",
+      nextStep: "Choose the conversion, retention, or feedback experiment.",
+      evidence: ""
+    }
+  }[stage] ?? {
+    id: `${slugifyFilename(name)}-launch-page`,
+    title: "Launch page",
+    status: "missing",
+    priority: "Critical",
+    purpose: "Turn the product room into a public-facing surface.",
+    nextStep: "Draft the first public surface.",
+    evidence: ""
+  }
+
+  return [...baseAssets, stageAsset]
+}
+
 function gateTargetLabel(stage) {
   return ({
     beta: "paid beta",
@@ -799,6 +941,21 @@ function commitWorkspace(nextWorkspace, nextStatus) {
   errorMessage = ""
 }
 
+function setupProfileFromForm(form) {
+  return {
+    businessModel: String(form.get("businessModel") ?? "unknown"),
+    currentGoal: String(form.get("currentGoal") ?? "validate"),
+    hasPrototype: String(form.get("hasPrototype") ?? "unknown"),
+    hasRepo: String(form.get("hasRepo") ?? "unknown"),
+    isCharging: String(form.get("isCharging") ?? "unknown"),
+    productType: String(form.get("productType") ?? "other"),
+    sourceLink: String(form.get("sourceLink") ?? "").trim(),
+    stageOverride: String(form.get("stageOverride") ?? "auto"),
+    traction: String(form.get("traction") ?? "").trim(),
+    usersHaveAccess: String(form.get("usersHaveAccess") ?? "unknown")
+  }
+}
+
 function canDiscardActiveWork() {
   return !(isEditing || hasUnsavedFormChanges) || window.confirm("Discard unsaved edits?")
 }
@@ -808,6 +965,7 @@ function setActiveProduct(productId) {
 
   const nextWorkspace = { ...workspace, activeProductId: productId }
   isEditing = false
+  isCreatingProduct = false
   hasUnsavedFormChanges = false
   commitWorkspace(nextWorkspace, "Local-only workspace")
   render()
@@ -818,6 +976,9 @@ function setActiveView(view) {
 
   activeView = view
   isEditing = false
+  if (view !== "setup") {
+    isCreatingProduct = false
+  }
   hasUnsavedFormChanges = false
   errorMessage = ""
   render()
@@ -826,6 +987,26 @@ function setActiveView(view) {
 function editRoom() {
   isEditing = true
   hasUnsavedFormChanges = false
+  errorMessage = ""
+  render()
+}
+
+function startCreateProduct() {
+  if (!canDiscardActiveWork()) return
+
+  activeView = "setup"
+  isEditing = false
+  isCreatingProduct = true
+  hasUnsavedFormChanges = false
+  statusMessage = "New product draft"
+  errorMessage = ""
+  render()
+}
+
+function cancelCreateProduct() {
+  isCreatingProduct = false
+  hasUnsavedFormChanges = false
+  statusMessage = "No product created"
   errorMessage = ""
   render()
 }
@@ -864,7 +1045,8 @@ function saveSetup(event) {
 
   const product = activeProduct()
   const form = new FormData(event.currentTarget)
-  const sourceLink = String(form.get("sourceLink") ?? "").trim()
+  const setupProfile = setupProfileFromForm(form)
+  const sourceLink = setupProfile.sourceLink
 
   if (sourceLink && !safeProofLink(sourceLink)) {
     errorMessage = "Use a full http or https link for the source link."
@@ -872,18 +1054,6 @@ function saveSetup(event) {
     return
   }
 
-  const setupProfile = {
-    businessModel: String(form.get("businessModel") ?? "unknown"),
-    currentGoal: String(form.get("currentGoal") ?? "validate"),
-    hasPrototype: String(form.get("hasPrototype") ?? "unknown"),
-    hasRepo: String(form.get("hasRepo") ?? "unknown"),
-    isCharging: String(form.get("isCharging") ?? "unknown"),
-    productType: String(form.get("productType") ?? "other"),
-    sourceLink,
-    stageOverride: String(form.get("stageOverride") ?? "auto"),
-    traction: String(form.get("traction") ?? "").trim(),
-    usersHaveAccess: String(form.get("usersHaveAccess") ?? "unknown")
-  }
   const nextStage = inferStageFromProfile(setupProfile, product.stage)
   const definition = stageDefinition(nextStage)
   const currentFocus = String(form.get("currentFocus") ?? "").trim()
@@ -903,6 +1073,108 @@ function saveSetup(event) {
     hasUnsavedFormChanges = false
   } catch {
     errorMessage = "Could not save the setup locally. Keep this tab open and try again."
+  }
+
+  render()
+}
+
+function createProduct(event) {
+  event.preventDefault()
+
+  const form = new FormData(event.currentTarget)
+  const name = String(form.get("name") ?? "").trim()
+
+  if (!name) {
+    errorMessage = "Product name is required."
+    render()
+    return
+  }
+
+  const setupProfile = setupProfileFromForm(form)
+  const sourceLink = setupProfile.sourceLink
+
+  if (sourceLink && !safeProofLink(sourceLink)) {
+    errorMessage = "Use a full http or https link for the source link."
+    render()
+    return
+  }
+
+  const stage = inferStageFromProfile(setupProfile, "prototype")
+  const definition = stageDefinition(stage)
+  const oneLiner = String(form.get("oneLiner") ?? "").trim()
+  const audience = String(form.get("user") ?? "").trim()
+  const problem = String(form.get("problem") ?? "").trim()
+  const promise = String(form.get("promise") ?? "").trim()
+  const pricingHypothesis = String(form.get("pricingHypothesis") ?? "").trim()
+  const currentFocus = String(form.get("currentFocus") ?? "").trim()
+  const topRisk = String(form.get("topRisk") ?? "").trim()
+  const status = String(form.get("status") ?? "").trim()
+  const targetDate = String(form.get("targetDate") ?? "").trim()
+  const productId = uniqueProductId(name)
+  const docsAssets = starterDocsAssets(stage, name, setupProfile.productType, sourceLink)
+  const evidenceSources = sourceLink ? [{
+    attachedTo: "brief",
+    id: `evidence-${productId}-source`,
+    note: "Source of truth captured during product setup.",
+    title: `${name} source`,
+    type: setupProfile.hasRepo === "yes" ? "repo" : "doc",
+    url: sourceLink
+  }] : []
+  const starterProduct = {
+    id: productId,
+    name,
+    stage,
+    status: status || definition.defaultStatus,
+    targetDate: targetDate || "TBD",
+    setupProfile,
+    repoUrl: sourceLink,
+    oneLiner: oneLiner || "A new product being shaped in Pendragon.",
+    user: audience || "The first useful audience is still being defined.",
+    currentFocus: currentFocus || definition.focus,
+    decisionNeeded: `What must be true before ${definition.surfaceLabel.toLowerCase()}?`,
+    topRisk: topRisk || "The riskiest assumption has not been named yet.",
+    brief: {
+      problem: problem || "The core problem is not sharp enough yet.",
+      promise: promise || "The product promise is still being shaped.",
+      pricingHypothesis: pricingHypothesis || "Pricing hypothesis not captured yet.",
+      primaryMilestone: targetDate || definition.defaultStatus,
+      strategicConstraint: "Keep the scope honest until the room has stronger proof."
+    },
+    decisions: [
+      {
+        id: `decision-${productId}-stage-gate`,
+        title: `What must be true before ${definition.surfaceLabel.toLowerCase()}?`,
+        status: "open",
+        context: "Created with the product room so the first stage-defining decision is visible.",
+        options: ["Ship the next surface", "Collect more proof", "Cut scope"],
+        chosenPath: "",
+        revisitTrigger: "When the stage engine and readiness gate agree the product is ready."
+      }
+    ],
+    docsAssets,
+    evidenceSources,
+    nextActions: definition.actionStack.slice(0, 3),
+    readiness: syncDocsReadiness({ readiness: starterReadiness(setupProfile) }, docsAssets),
+    launchSnapshots: []
+  }
+  const engine = stageEngineResult(starterProduct)
+  const nextProduct = {
+    ...starterProduct,
+    nextActions: engine.nextActions.slice(0, 3)
+  }
+  const nextWorkspace = {
+    ...workspace,
+    activeProductId: nextProduct.id,
+    products: [...workspace.products, nextProduct]
+  }
+
+  try {
+    isCreatingProduct = false
+    activeView = "warroom"
+    commitWorkspace(nextWorkspace, `${nextProduct.name} room created at ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`)
+    hasUnsavedFormChanges = false
+  } catch {
+    errorMessage = "Could not create the product locally. Keep this tab open and try again."
   }
 
   render()
@@ -1132,6 +1404,7 @@ function resetDemo() {
 
   workspace = resetWorkspace()
   isEditing = false
+  isCreatingProduct = false
   hasUnsavedFormChanges = false
   statusMessage = "Demo data restored"
   errorMessage = ""
@@ -1355,6 +1628,192 @@ function renderSetupAction(action, index) {
   `
 }
 
+function renderCreateProduct() {
+  const profile = {
+    businessModel: "unknown",
+    currentGoal: "validate",
+    hasPrototype: "unknown",
+    hasRepo: "unknown",
+    isCharging: "unknown",
+    productType: "other",
+    sourceLink: "",
+    stageOverride: "auto",
+    traction: "",
+    usersHaveAccess: "unknown"
+  }
+  const stage = inferStageFromProfile(profile, "prototype")
+  const definition = stageDefinition(stage)
+  const draftProduct = {
+    brief: {},
+    currentFocus: definition.focus,
+    decisions: [],
+    docsAssets: [],
+    evidenceSources: [],
+    id: "new-product",
+    name: "New product",
+    nextActions: definition.actionStack,
+    oneLiner: "",
+    readiness: starterReadiness(profile),
+    setupProfile: profile,
+    stage,
+    status: definition.defaultStatus,
+    targetDate: "TBD",
+    user: ""
+  }
+  const engine = stageEngineResult(draftProduct)
+
+  return `
+    ${errorMessage ? `<p class="error-message">${escapeHtml(errorMessage)}</p>` : ""}
+    <section class="setup-surface create-product-surface">
+      <article class="setup-hero">
+        <div>
+          <p class="eyebrow">Create Product Room</p>
+          <h2>Start with the product truth we know today.</h2>
+          <p>Pendragon will infer the first mode, create starter launch assets, and route the new room from these setup signals.</p>
+        </div>
+        <aside class="setup-verdict">
+          <span>${engine.completeness}%</span>
+          <strong>Starter signal</strong>
+          <small>${escapeHtml(definition.surfaceLabel)}</small>
+        </aside>
+      </article>
+
+      <form id="create-product-form" class="editor-form setup-form create-product-form">
+        <div class="surface-heading">
+          <div>
+            <p class="eyebrow">New Product Intake</p>
+            <h2>Create a room that is usable on day one.</h2>
+          </div>
+          <div class="form-actions">
+            <button class="primary-button" type="submit">Create room</button>
+            <button class="quiet-button" type="button" data-action="cancel-create-product">Cancel</button>
+          </div>
+        </div>
+
+        <div class="setup-form__grid">
+          <label for="createName">
+            <span>Product name</span>
+            <input id="createName" name="name" placeholder="Example: Launch Ledger" />
+          </label>
+          <label for="createProductType">
+            <span>Product type</span>
+            <select id="createProductType" name="productType">
+              ${renderOptions(setupOptions.productTypes, profile.productType)}
+            </select>
+          </label>
+          <label for="createBusinessModel">
+            <span>Business model</span>
+            <select id="createBusinessModel" name="businessModel">
+              ${renderOptions(setupOptions.businessModels, profile.businessModel)}
+            </select>
+          </label>
+          <label for="createGoal">
+            <span>Current goal</span>
+            <select id="createGoal" name="currentGoal">
+              ${renderOptions(setupOptions.currentGoals, profile.currentGoal)}
+            </select>
+          </label>
+          <label for="createStageOverride">
+            <span>Stage</span>
+            <select id="createStageOverride" name="stageOverride">
+              ${renderOptions(setupOptions.stageOverrides, profile.stageOverride)}
+            </select>
+          </label>
+          <label for="createTargetDate">
+            <span>Target date</span>
+            <input id="createTargetDate" name="targetDate" placeholder="TBD" />
+          </label>
+          <label for="createStatus">
+            <span>Status</span>
+            <input id="createStatus" name="status" placeholder="${escapeHtml(definition.defaultStatus)}" />
+          </label>
+          <label for="createSourceLink">
+            <span>Source link</span>
+            <input id="createSourceLink" name="sourceLink" inputmode="url" placeholder="https://github.com/..." />
+          </label>
+        </div>
+
+        <div class="create-product-form__brief">
+          <label for="createOneLiner">
+            <span>One-liner</span>
+            <textarea id="createOneLiner" name="oneLiner" rows="2" placeholder="What is this product in one sentence?"></textarea>
+          </label>
+          <label for="createAudience">
+            <span>Audience</span>
+            <textarea id="createAudience" name="user" rows="2" placeholder="Who is the first useful user?"></textarea>
+          </label>
+          <label for="createProblem">
+            <span>Problem</span>
+            <textarea id="createProblem" name="problem" rows="3" placeholder="What painful or valuable problem does it solve?"></textarea>
+          </label>
+          <label for="createPromise">
+            <span>Promise</span>
+            <textarea id="createPromise" name="promise" rows="3" placeholder="What outcome should the product create?"></textarea>
+          </label>
+        </div>
+
+        <div class="setup-form__signals">
+          <label for="createHasPrototype">
+            <span>Working prototype?</span>
+            <select id="createHasPrototype" name="hasPrototype">
+              ${renderOptions(setupOptions.signals, profile.hasPrototype)}
+            </select>
+          </label>
+          <label for="createHasRepo">
+            <span>Repo or source?</span>
+            <select id="createHasRepo" name="hasRepo">
+              ${renderOptions(setupOptions.signals, profile.hasRepo)}
+            </select>
+          </label>
+          <label for="createUsersAccess">
+            <span>Users have access?</span>
+            <select id="createUsersAccess" name="usersHaveAccess">
+              ${renderOptions(setupOptions.signals, profile.usersHaveAccess)}
+            </select>
+          </label>
+          <label for="createCharging">
+            <span>Charging?</span>
+            <select id="createCharging" name="isCharging">
+              ${renderOptions(setupOptions.signals, profile.isCharging)}
+            </select>
+          </label>
+        </div>
+
+        <div class="create-product-form__brief">
+          <label for="createPricing">
+            <span>Pricing hypothesis</span>
+            <textarea id="createPricing" name="pricingHypothesis" rows="2" placeholder="Free, beta price, license, subscription, services, usage-based..."></textarea>
+          </label>
+          <label for="createTraction">
+            <span>Traction or proof note</span>
+            <textarea id="createTraction" name="traction" rows="2" placeholder="Users, installs, waitlist, revenue, interviews, demos, or observed demand."></textarea>
+          </label>
+          <label for="createCurrentFocus">
+            <span>Current focus</span>
+            <textarea id="createCurrentFocus" name="currentFocus" rows="2" placeholder="${escapeHtml(definition.focus)}"></textarea>
+          </label>
+          <label for="createTopRisk">
+            <span>Top risk</span>
+            <textarea id="createTopRisk" name="topRisk" rows="2" placeholder="What could make this fail?"></textarea>
+          </label>
+        </div>
+      </form>
+
+      <article class="setup-panel setup-panel--wide">
+        <div class="preview-section-heading">
+          <p class="eyebrow">What Pendragon Creates</p>
+          <span>Starter room</span>
+        </div>
+        <ol class="question-list">
+          <li><span>1</span><p>A stage-aware product room routed by the setup signals.</p></li>
+          <li><span>2</span><p>Starter docs assets, a first decision, readiness rows, and evidence link when supplied.</p></li>
+          <li><span>3</span><p>A Forge surface type that matches the inferred stage.</p></li>
+        </ol>
+      </article>
+    </section>
+  `
+}
+
 function renderSetup(product) {
   const engine = stageEngineResult(product)
   const profile = engine.profile
@@ -1534,7 +1993,7 @@ function renderSetup(product) {
 }
 
 function renderProductNav(product) {
-  return workspace.products
+  const productButtons = workspace.products
     .map((item) => {
       const active = item.id === product.id ? " active" : ""
       return `
@@ -1545,6 +2004,14 @@ function renderProductNav(product) {
       `
     })
     .join("")
+
+  return `
+    ${productButtons}
+    <button class="product-nav__item product-nav__item--new${isCreatingProduct ? " active" : ""}" type="button" data-action="new-product">
+      <span>New product</span>
+      <small>Create a room</small>
+    </button>
+  `
 }
 
 function renderViewNav() {
@@ -3261,6 +3728,7 @@ function renderForge(product) {
 }
 
 function renderActiveView(product) {
+  if (activeView === "setup" && isCreatingProduct) return renderCreateProduct()
   if (activeView === "setup") return renderSetup(product)
   if (activeView === "brief") return renderBrief(product)
   if (activeView === "decisions") return renderDecisions(product)
@@ -3280,6 +3748,7 @@ function bindEvents() {
   })
 
   document.querySelector("[data-action='edit']")?.addEventListener("click", editRoom)
+  document.querySelector("[data-action='new-product']")?.addEventListener("click", startCreateProduct)
   document.querySelector("[data-action='export']")?.addEventListener("click", exportWorkspace)
   document.querySelector("[data-action='export-launch-surface']")?.addEventListener("click", exportLaunchSurface)
   document.querySelectorAll("[data-action='export-share-package']").forEach((button) => {
@@ -3296,8 +3765,10 @@ function bindEvents() {
   document.querySelectorAll("[data-action='cancel-edit']").forEach((button) => {
     button.addEventListener("click", cancelEdit)
   })
+  document.querySelector("[data-action='cancel-create-product']")?.addEventListener("click", cancelCreateProduct)
   document.querySelector("#room-editor")?.addEventListener("submit", saveRoom)
   document.querySelector("#setup-form")?.addEventListener("submit", saveSetup)
+  document.querySelector("#create-product-form")?.addEventListener("submit", createProduct)
   document.querySelector("#brief-form")?.addEventListener("submit", saveBrief)
   document.querySelector("#decision-form")?.addEventListener("submit", addDecision)
   document.querySelector("#docs-form")?.addEventListener("submit", saveDocsAssets)
@@ -3315,7 +3786,11 @@ function bindEvents() {
 
 function render() {
   const product = activeProduct()
-  const percent = readinessPercent(product)
+  const percent = isCreatingProduct ? 0 : readinessPercent(product)
+  const headerStage = isCreatingProduct ? "Setup" : (stageLabels[product.stage] ?? product.stage)
+  const headerName = isCreatingProduct ? "New product" : product.name
+  const headerStatus = isCreatingProduct ? "Create a local product room" : `${product.status} - Target: ${product.targetDate}`
+  const scoreLabel = isCreatingProduct ? "Starter readiness" : "Launch readiness"
   const app = document.querySelector("#app")
 
   app.innerHTML = `
@@ -3336,18 +3811,18 @@ function render() {
       <main class="warroom">
         <header class="topbar">
           <div>
-            <p class="eyebrow">${escapeHtml(stageLabels[product.stage])} Mode</p>
-            <h1>${escapeHtml(product.name)}</h1>
-            <p>${escapeHtml(product.status)} - Target: ${escapeHtml(product.targetDate)}</p>
+            <p class="eyebrow">${escapeHtml(headerStage)} Mode</p>
+            <h1>${escapeHtml(headerName)}</h1>
+            <p>${escapeHtml(headerStatus)}</p>
           </div>
           <div class="command-bar" aria-label="Room commands">
-            ${activeView === "warroom" ? `<button class="primary-button" type="button" data-action="edit">Edit room</button>` : ""}
+            ${activeView === "warroom" && !isCreatingProduct ? `<button class="primary-button" type="button" data-action="edit">Edit room</button>` : ""}
             <button class="quiet-button" type="button" data-action="export">Export JSON</button>
             <button class="quiet-button" type="button" data-action="reset">Reset demo</button>
           </div>
           <div class="score">
             <span>${percent}%</span>
-            <small>Launch readiness</small>
+            <small>${escapeHtml(scoreLabel)}</small>
           </div>
         </header>
 
@@ -3368,6 +3843,7 @@ window.addEventListener("keydown", (event) => {
   if (event.key === "R" && event.shiftKey && event.metaKey) {
     workspace = resetWorkspace()
     isEditing = false
+    isCreatingProduct = false
     hasUnsavedFormChanges = false
     statusMessage = "Demo data restored"
     errorMessage = ""
